@@ -1,0 +1,338 @@
+const mqtt = require("mqtt");
+const { SOURCES } = require("./sources");
+
+let client = null;
+let connected = false;
+let discoveryPublished = false;
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80);
+}
+
+function isMqttEnabled(config) {
+  return Boolean(config && config.mqtt_enabled);
+}
+
+function getBaseTopic(config) {
+  return (config.mqtt_base_topic || "necrologi_zona_tv").replace(/\/+$/, "");
+}
+
+function getDiscoveryPrefix(config) {
+  return (config.mqtt_discovery_prefix || "homeassistant").replace(/\/+$/, "");
+}
+
+function publish(topic, payload, retain) {
+  if (!client) {
+    console.warn("[mqtt] publish ignorato: client non inizializzato");
+    return;
+  }
+  if (!connected) {
+    console.warn(`[mqtt] publish ignorato: non connesso (topic: ${topic})`);
+    return;
+  }
+
+  const value = typeof payload === "string" ? payload : JSON.stringify(payload);
+  client.publish(topic, value, { retain: Boolean(retain), qos: 0 }, (err) => {
+    if (err) {
+      console.error(`[mqtt] Errore publish su ${topic}: ${err.message}`);
+    } else {
+      console.debug(`[mqtt] Pubblicato ${topic} (retain=${retain}, len=${value.length})`);
+    }
+  });
+}
+
+function buildSummary(items, updatedAt) {
+  const visibleItems = (items || []).filter((item) => item && !item.hidden_old);
+  const bySource = {};
+  const bySourceDetails = {};
+  const byTown = {};
+  const byTownDetails = {};
+  let latestDownloadedAt = null;
+  let latestDownloadedTs = 0;
+
+  for (const item of visibleItems) {
+    const sourceId = item.source_id || "sconosciuta";
+    const town = item.paese || "Non specificato";
+    const downloadedAt = item.downloaded_at || item.scraped_at || null;
+    const downloadedTs = Date.parse(downloadedAt || "");
+    bySource[sourceId] = (bySource[sourceId] || 0) + 1;
+    byTown[town] = (byTown[town] || 0) + 1;
+
+    if (!byTownDetails[town]) {
+      byTownDetails[town] = {
+        count: 0,
+        latest_downloaded_at: null,
+        items: [],
+      };
+    }
+
+    if (!bySourceDetails[sourceId]) {
+      bySourceDetails[sourceId] = {
+        count: 0,
+        label: item.source || sourceId,
+        url: item.source_url || item.obituary_url || "",
+        latest_downloaded_at: null,
+      };
+    }
+
+    byTownDetails[town].count += 1;
+    byTownDetails[town].items.push(buildTownItemAttribute(item));
+
+    bySourceDetails[sourceId].count += 1;
+    if (item.source_url && !bySourceDetails[sourceId].url) {
+      bySourceDetails[sourceId].url = item.source_url;
+    }
+    if (Number.isFinite(downloadedTs)) {
+      const currentSourceTs = Date.parse(bySourceDetails[sourceId].latest_downloaded_at || "");
+      if (!Number.isFinite(currentSourceTs) || downloadedTs > currentSourceTs) {
+        bySourceDetails[sourceId].latest_downloaded_at = downloadedAt;
+      }
+      if (downloadedTs > latestDownloadedTs) {
+        latestDownloadedTs = downloadedTs;
+        latestDownloadedAt = downloadedAt;
+      }
+      const currentTownTs = Date.parse(byTownDetails[town].latest_downloaded_at || "");
+      if (!Number.isFinite(currentTownTs) || downloadedTs > currentTownTs) {
+        byTownDetails[town].latest_downloaded_at = downloadedAt;
+      }
+    }
+  }
+
+  return {
+    count: visibleItems.length,
+    updated_at: updatedAt,
+    by_source: bySource,
+    by_source_details: bySourceDetails,
+    by_town: byTown,
+    by_town_details: byTownDetails,
+    latest_downloaded_at: latestDownloadedAt,
+  };
+}
+
+function buildTownItemAttribute(item) {
+  return {
+    id: item.id || null,
+    full_name: item.full_name || null,
+    nome: item.nome || null,
+    cognome: item.cognome || null,
+    paese: item.paese || null,
+    data_funerale: item.data_funerale || null,
+    ora_funerale: item.ora_funerale || null,
+    luogo_funerale: item.luogo_funerale || null,
+    source: item.source || null,
+    source_id: item.source_id || null,
+    obituary_url: item.obituary_url || null,
+    foto_api_url: item.foto_api_url || null,
+    foto: item.foto || null,
+    downloaded_at: item.downloaded_at || item.scraped_at || null,
+  };
+}
+
+function publishDiscovery(config, items) {
+  if (!client || !connected) {
+    console.warn("[mqtt] publishDiscovery saltato: non connesso");
+    return;
+  }
+  if (discoveryPublished) {
+    console.debug("[mqtt] Discovery già pubblicata, skip");
+    return;
+  }
+
+  const discoveryPrefix = getDiscoveryPrefix(config);
+  const baseTopic = getBaseTopic(config);
+  const stateTopic = `${baseTopic}/summary`;
+  const device = {
+    identifiers: ["necrologi_zona_tv"],
+    name: "Necrologi Zona TV",
+    manufacturer: "Custom Add-on",
+    model: "Necrologi Scraper",
+  };
+
+  const sensors = [
+    {
+      id: "total",
+      name: "Necrologi Totale",
+      valueTemplate: "{{ value_json.count }}",
+      icon: "mdi:cross",
+      unit: "annunci",
+    },
+    {
+      id: "updated_at",
+      name: "Necrologi Ultimo Aggiornamento",
+      valueTemplate: "{{ value_json.updated_at }}",
+      icon: "mdi:clock-outline",
+    },
+    {
+      id: "latest_downloaded_at",
+      name: "Necrologi Ultimo Scaricamento",
+      valueTemplate: "{{ value_json.latest_downloaded_at }}",
+      icon: "mdi:download-clock-outline",
+    },
+  ];
+
+  for (const source of SOURCES) {
+    const sourceId = source.id;
+    sensors.push({
+      id: `source_${slugify(sourceId)}`,
+      name: `Necrologi ${source.label || sourceId}`,
+      valueTemplate: `{{ value_json.by_source.${sourceId} | default(0) }}`,
+      icon: "mdi:web",
+      unit: "annunci",
+    });
+    sensors.push({
+      id: `source_${slugify(sourceId)}_last_download`,
+      name: `Necrologi ${source.label || sourceId} ultimo scaricamento`,
+      valueTemplate: `{{ value_json.by_source_details.${sourceId}.latest_downloaded_at | default('') }}`,
+      icon: "mdi:download-clock-outline",
+    });
+  }
+
+  for (const town of config.towns || []) {
+    const townKey = String(town || "");
+    const townTopic = `${baseTopic}/town/${slugify(townKey)}`;
+    sensors.push({
+      id: `town_${slugify(townKey)}`,
+      name: `Necrologi ${townKey}`,
+      valueTemplate: `{{ value_json.by_town['${townKey}'] | default(0) }}`,
+      icon: "mdi:map-marker",
+      unit: "annunci",
+      attributesTopic: townTopic,
+    });
+  }
+
+  for (const sensor of sensors) {
+    const topic = `${discoveryPrefix}/sensor/necrologi_zona_tv/${sensor.id}/config`;
+    const payload = {
+      name: sensor.name,
+      unique_id: `necrologi_zona_tv_${sensor.id}`,
+      state_topic: stateTopic,
+      value_template: sensor.valueTemplate,
+      icon: sensor.icon,
+      device,
+    };
+
+    if (sensor.unit) {
+      payload.unit_of_measurement = sensor.unit;
+    }
+    if (sensor.attributesTopic) {
+      payload.json_attributes_topic = sensor.attributesTopic;
+    }
+
+    publish(topic, payload, true);
+  }
+
+  console.log(`[mqtt] Discovery pubblicata: ${sensors.length} sensori su prefix '${discoveryPrefix}'`);
+  discoveryPublished = true;
+}
+
+async function initMqtt(config) {
+  if (!isMqttEnabled(config)) {
+    console.log("[mqtt] Disabilitato (mqtt_enabled=false)");
+    return;
+  }
+
+  const url = config.mqtt_url || "mqtt://core-mosquitto:1883";
+  const baseTopic = getBaseTopic(config);
+  const clientId = `necrologi_zona_tv_${Math.random().toString(16).slice(2, 10)}`;
+  console.log(`[mqtt] Inizializzazione: url=${url} clientId=${clientId} baseTopic=${baseTopic}`);
+
+  client = mqtt.connect(url, {
+    clientId,
+    username: config.mqtt_username || undefined,
+    password: config.mqtt_password || undefined,
+    reconnectPeriod: 5000,
+    will: {
+      topic: `${baseTopic}/status`,
+      payload: "offline",
+      retain: true,
+    },
+  });
+
+  client.on("connect", () => {
+    connected = true;
+    console.log(`[mqtt] Connesso a ${url}`);
+    publish(`${baseTopic}/status`, "online", true);
+  });
+
+  client.on("reconnect", () => {
+    console.warn(`[mqtt] Tentativo di riconnessione a ${url}...`);
+    connected = false;
+  });
+
+  client.on("close", () => {
+    console.warn("[mqtt] Connessione chiusa");
+    connected = false;
+  });
+
+  client.on("offline", () => {
+    console.warn("[mqtt] Client offline");
+  });
+
+  client.on("error", (error) => {
+    console.error(`[mqtt] Errore: ${error.message}`);
+  });
+}
+
+async function publishMqttUpdate({ config, items, updatedAt, newItems }) {
+  if (!isMqttEnabled(config)) {
+    console.debug("[mqtt] publishMqttUpdate saltato: mqtt disabilitato");
+    return;
+  }
+  if (!client) {
+    console.warn("[mqtt] publishMqttUpdate saltato: client non inizializzato");
+    return;
+  }
+  if (!connected) {
+    console.warn("[mqtt] publishMqttUpdate saltato: non connesso");
+    return;
+  }
+
+  const baseTopic = getBaseTopic(config);
+  const summary = buildSummary(items, updatedAt);
+  console.log(`[mqtt] Pubblicazione update: ${items.length} item, ${newItems ? newItems.length : 0} nuovi`);
+
+  publishDiscovery(config, items);
+  publish(`${baseTopic}/summary`, summary, true);
+
+  for (const town of config.towns || []) {
+    const townKey = String(town || "");
+    const townSummary = summary.by_town_details?.[townKey] || {
+      count: 0,
+      latest_downloaded_at: null,
+      items: [],
+    };
+    publish(
+      `${baseTopic}/town/${slugify(townKey)}`,
+      {
+        town: townKey,
+        updated_at: updatedAt,
+        count: townSummary.count,
+        latest_downloaded_at: townSummary.latest_downloaded_at,
+        items: townSummary.items,
+      },
+      true
+    );
+  }
+
+  if (Array.isArray(newItems) && newItems.length > 0) {
+    console.log(`[mqtt] Pubblicazione ${newItems.length} nuovi necrologi su ${baseTopic}/new`);
+    publish(
+      `${baseTopic}/new`,
+      {
+        count: newItems.length,
+        updated_at: updatedAt,
+        items: newItems,
+      },
+      false
+    );
+  }
+}
+
+module.exports = {
+  initMqtt,
+  publishMqttUpdate,
+};

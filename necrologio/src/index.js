@@ -1,0 +1,731 @@
+require("./logger");
+
+const express = require("express");
+const path = require("path");
+const { loadConfig } = require("./config");
+const { scrapeAll, scrapeSource, SOURCES } = require("./scraper");
+const { readData, writeData } = require("./storage");
+const { SHARE_IMAGES_DIR, persistImages } = require("./images");
+const { dateToSortableNumber } = require("./utils");
+const { initMqtt, publishMqttUpdate } = require("./mqtt");
+const { clearAiCache } = require("./ai_extraction");
+
+const app = express();
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+app.use(express.json());
+app.use("/images", express.static(SHARE_IMAGES_DIR));
+
+function escapeIcsText(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function parseDateAndTime(dateValue, timeValue) {
+  const dateText = String(dateValue || "").trim();
+  const dateMatch = dateText.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!dateMatch) {
+    return null;
+  }
+
+  const day = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const year = Number(dateMatch[3]);
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  const timeText = String(timeValue || "").trim();
+  const timeMatch = timeText.match(/^(\d{1,2}):(\d{2})$/);
+  if (timeMatch) {
+    const hh = Number(timeMatch[1]);
+    const mm = Number(timeMatch[2]);
+    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+      date.setHours(hh, mm, 0, 0);
+      return { date, hasTime: true };
+    }
+  }
+
+  return { date, hasTime: false };
+}
+
+function formatIcsDate(date) {
+  const y = String(date.getFullYear());
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+function formatIcsDateTime(date) {
+  const y = String(date.getFullYear());
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${y}${m}${d}T${hh}${mm}${ss}`;
+}
+
+function buildCalendarIcs(items, calendarName) {
+  const now = new Date();
+  const dtstamp = formatIcsDateTime(now);
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//necrologio//funerali//IT",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${escapeIcsText(calendarName || "Funerali")}`,
+  ];
+
+  for (const item of items || []) {
+    const parsed = parseDateAndTime(item?.data_funerale, item?.ora_funerale);
+    if (!parsed) {
+      continue;
+    }
+
+    const start = new Date(parsed.date.getTime());
+    const end = new Date(parsed.date.getTime());
+    if (parsed.hasTime) {
+      end.setMinutes(end.getMinutes() + 60);
+    } else {
+      end.setDate(end.getDate() + 1);
+    }
+
+    const fullName = item?.full_name || "Funerale";
+    const town = item?.paese || "";
+    const place = item?.luogo_funerale || "";
+    const summaryTown = town ? ` - ${town}` : "";
+    const summary = `Funerale ${fullName}${summaryTown}`;
+    const descriptionParts = [
+      town ? `Paese: ${town}` : "",
+      place ? `Luogo: ${place}` : "",
+      item?.parenti ? `Parenti: ${item.parenti}` : "",
+      item?.obituary_url ? `Annuncio: ${item.obituary_url}` : "",
+    ].filter(Boolean);
+
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${escapeIcsText(item.id || `${fullName}-${formatIcsDate(start)}`)}@necrologio`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    if (parsed.hasTime) {
+      lines.push(`DTSTART:${formatIcsDateTime(start)}`);
+      lines.push(`DTEND:${formatIcsDateTime(end)}`);
+    } else {
+      lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(start)}`);
+      lines.push(`DTEND;VALUE=DATE:${formatIcsDate(end)}`);
+    }
+    if (place) {
+      lines.push(`LOCATION:${escapeIcsText(place)}`);
+    }
+    lines.push(`SUMMARY:${escapeIcsText(summary)}`);
+    if (descriptionParts.length) {
+      lines.push(`DESCRIPTION:${escapeIcsText(descriptionParts.join("\\n"))}`);
+    }
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+  return `${lines.join("\r\n")}\r\n`;
+}
+
+function buildSummaryViewModel(items, updatedAt, includeHidden, hiddenCount, selectedTown, showSummary) {
+  const groupsBySourceId = new Map();
+
+  for (const source of SOURCES) {
+    groupsBySourceId.set(source.id, {
+      items: [],
+      label: source.label || source.id,
+      sourceUrl: source.listUrl || "",
+    });
+  }
+
+  for (const item of items) {
+    const sourceIdKey = item.source_id || "sconosciuta";
+    if (!groupsBySourceId.has(sourceIdKey)) {
+      groupsBySourceId.set(sourceIdKey, {
+        items: [],
+        label: item.source || "Sconosciuta",
+        sourceUrl: item.source_url || item.obituary_url || "",
+      });
+    }
+    groupsBySourceId.get(sourceIdKey).items.push(item);
+  }
+
+  const sourceGroups = Array.from(groupsBySourceId.entries())
+    .sort((a, b) => b[1].items.length - a[1].items.length)
+    .map(([sourceId, { items: sourceItems, label, sourceUrl }]) => ({
+      sourceId,
+      label,
+      sourceUrl,
+      count: sourceItems.length,
+      latestDownloadedAt: getLatestDownloadedAt(sourceItems),
+    }));
+
+  const sortedItems = [...(items || [])].sort(
+    (a, b) => dateToSortableNumber(b.data_funerale) - dateToSortableNumber(a.data_funerale)
+  );
+
+  return {
+    updatedAt: formatDisplayDateTime(updatedAt) === "n.d." ? "mai" : formatDisplayDateTime(updatedAt),
+    includeHidden: Boolean(includeHidden),
+    hiddenCount: Number(hiddenCount || 0),
+    selectedTown: normalizeTownLabel(selectedTown),
+    showSummary: Boolean(showSummary),
+    sourceSummaryUpdatedAt: formatDisplayDateTime(updatedAt),
+    sourceGroups,
+    sourceCount: groupsBySourceId.size,
+    items: sortedItems.map((item) => ({
+      ...item,
+      displayDownloadedAt: formatDisplayDateTime(item.downloaded_at || item.scraped_at),
+      displaySourceLabel: item.source || item.source_id || "Sorgente sconosciuta",
+    })),
+  };
+}
+
+function getLatestDownloadedAt(items) {
+  let latestValue = "";
+  let latestTs = 0;
+
+  for (const item of items || []) {
+    const value = item?.downloaded_at || item?.scraped_at || "";
+    const ts = Date.parse(value);
+    if (!Number.isFinite(ts)) {
+      continue;
+    }
+    if (ts > latestTs) {
+      latestTs = ts;
+      latestValue = value;
+    }
+  }
+
+  return formatDisplayDateTime(latestValue);
+}
+
+function formatDisplayDateTime(value) {
+  const ts = Date.parse(value || "");
+  if (!Number.isFinite(ts)) {
+    return "n.d.";
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(ts));
+}
+
+function normalizeTownLabel(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+  return text
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+let state = {
+  lastUpdate: null,
+  running: false,
+  items: readData(),
+  lastError: null,
+  forceReprocessSources: new Set(),
+};
+
+const config = loadConfig();
+
+function getVisibleItems(items) {
+  return (items || []).filter((item) => item && !item.hidden_old);
+}
+
+function getNewItems(previousItems, currentItems) {
+  const oldIds = new Set((previousItems || []).map((x) => x.id));
+  return getVisibleItems(currentItems || []).filter((x) => x && x.id && !oldIds.has(x.id));
+}
+
+async function refreshData() {
+  if (state.running) {
+    return { skipped: true, reason: "already_running" };
+  }
+
+  state.running = true;
+  state.lastError = null;
+
+  try {
+    const previousItems = state.items;
+    let items = await scrapeAll({ ...config, existingItems: previousItems });
+
+    if (config.save_images) {
+      items = await persistImages(items);
+    }
+
+    state.items = items;
+    state.lastUpdate = new Date().toISOString();
+    writeData(items);
+    await publishMqttUpdate({
+      config,
+      items: state.items,
+      updatedAt: state.lastUpdate,
+      newItems: getNewItems(previousItems, state.items),
+    });
+    console.log(`[refresh] Completato: ${items.length} necrologi utili`);
+    return { skipped: false, count: items.length };
+  } catch (error) {
+    state.lastError = error.message;
+    console.error("[refresh] Errore:", error);
+    return { skipped: false, error: error.message };
+  } finally {
+    state.running = false;
+  }
+}
+
+async function refreshAllWithProgress(sendEvent) {
+  if (state.running) {
+    return { skipped: true, reason: "already_running" };
+  }
+
+  state.running = true;
+  state.lastError = null;
+
+  try {
+    const previousItems = state.items;
+    const allItems = [];
+    let completedSources = 0;
+
+    sendEvent("start", {
+      source: "Tutte le sorgenti",
+      status: "Inizio scansione completa...",
+      at: new Date().toISOString(),
+      totalSources: SOURCES.length,
+    });
+
+    for (const source of SOURCES) {
+      sendEvent("source", {
+        sourceId: source.id,
+        source: source.label,
+        currentSource: completedSources + 1,
+        totalSources: SOURCES.length,
+        at: new Date().toISOString(),
+      });
+
+      let sourceItems = await scrapeSource(source, config, (progress) => {
+        const sourcePercent = progress.total > 0
+          ? Math.round((progress.current / progress.total) * 100)
+          : 100;
+        const overallPercent = Math.round(((completedSources + (progress.current / Math.max(progress.total, 1))) / SOURCES.length) * 100);
+        sendEvent("progress", {
+          current: progress.current,
+          total: progress.total,
+          title: progress.title,
+          count: progress.count,
+          percent: overallPercent,
+          source_percent: sourcePercent,
+          source: source.label,
+          currentSource: completedSources + 1,
+          totalSources: SOURCES.length,
+          at: new Date().toISOString(),
+        });
+      }, previousItems);
+
+      if (config.save_images) {
+        sendEvent("persist", {
+          status: `Download immagini: ${source.label}`,
+          source: source.label,
+          at: new Date().toISOString(),
+        });
+        sourceItems = await persistImages(sourceItems);
+      }
+
+      allItems.push(...sourceItems);
+      completedSources += 1;
+    }
+
+    sendEvent("merge", { status: "Merge finale e pubblicazione...", at: new Date().toISOString() });
+
+    const uniqueMap = new Map();
+    for (const item of allItems) {
+      uniqueMap.set(item.id, item);
+    }
+
+    state.items = Array.from(uniqueMap.values()).sort((a, b) => {
+      const aDate = dateToSortableNumber(a.data_funerale);
+      const bDate = dateToSortableNumber(b.data_funerale);
+      return bDate - aDate;
+    });
+    state.lastUpdate = new Date().toISOString();
+    writeData(state.items);
+    await publishMqttUpdate({
+      config,
+      items: state.items,
+      updatedAt: state.lastUpdate,
+      newItems: getNewItems(previousItems, state.items),
+    });
+
+    return { ok: true, count: state.items.length, last_update: state.lastUpdate };
+  } catch (error) {
+    state.lastError = error.message;
+    console.error("[refresh-stream] Errore refresh globale:", error);
+    return { ok: false, error: error.message };
+  } finally {
+    state.running = false;
+  }
+}
+
+async function refreshSource(sourceId) {
+  const source = SOURCES.find((s) => s.id === sourceId);
+  if (!source) {
+    return { error: "Source not found" };
+  }
+
+  state.running = true;
+  state.lastError = null;
+
+  try {
+    const previousItems = state.items;
+    const forceReprocess = state.forceReprocessSources.has(sourceId);
+    if (forceReprocess) {
+      console.info(`[scraper] Forzato reprocess senza cache: source=${source.id}`);
+    }
+    const sourceExistingItems = forceReprocess ? [] : previousItems;
+    let sourceItems = await scrapeSource(source, config, null, sourceExistingItems);
+
+    if (config.save_images) {
+      sourceItems = await persistImages(sourceItems);
+    }
+
+    const sourceUrlSet = new Set(sourceItems.map((item) => item.id));
+    const otherItems = state.items.filter((item) => !sourceUrlSet.has(item.id));
+
+    const merged = [...sourceItems, ...otherItems].sort((a, b) => {
+      const aDate = dateToSortableNumber(a.data_funerale);
+      const bDate = dateToSortableNumber(b.data_funerale);
+      return bDate - aDate;
+    });
+
+    state.items = merged;
+    state.lastUpdate = new Date().toISOString();
+    writeData(merged);
+    await publishMqttUpdate({
+      config,
+      items: state.items,
+      updatedAt: state.lastUpdate,
+      newItems: getNewItems(previousItems, state.items),
+    });
+    if (forceReprocess) {
+      state.forceReprocessSources.delete(sourceId);
+    }
+    console.log(`[refresh-source] ${source.label}: ${sourceItems.length} necrologi trovati`);
+    return { ok: true, count: sourceItems.length, source: source.label };
+  } catch (error) {
+    state.lastError = error.message;
+    console.error(`[refresh-source] Errore ${source.label}:`, error);
+    return { ok: false, error: error.message };
+  } finally {
+    state.running = false;
+  }
+}
+
+app.get("/health", (_, res) => {
+  res.json({
+    status: "ok",
+    running: state.running,
+    last_update: state.lastUpdate,
+    items: getVisibleItems(state.items).length,
+    hidden_items: (state.items || []).filter((item) => item && item.hidden_old).length,
+    last_error: state.lastError,
+  });
+});
+
+app.get(["/", "/web"], (req, res) => {
+  const includeHidden = String(req.query.include_hidden || "").toLowerCase() === "true";
+  const town = String(req.query.town || "").trim().toLowerCase();
+  const showSummary = String(req.query.summary || "true").toLowerCase() !== "false";
+  const visibleItems = getVisibleItems(state.items);
+  let itemsToShow = includeHidden ? state.items : visibleItems;
+  if (town) {
+    itemsToShow = itemsToShow.filter((x) => String(x?.paese || "").trim().toLowerCase() === town);
+  }
+  const hiddenCount = (state.items || []).length - visibleItems.length;
+  res.render(
+    "summary",
+    buildSummaryViewModel(itemsToShow, state.lastUpdate, includeHidden, hiddenCount, town, showSummary)
+  );
+});
+
+app.get("/obituaries", (req, res) => {
+  const town = (req.query.town || "").toString().trim().toLowerCase();
+  const limit = Number(req.query.limit || 0);
+  const includeHidden = String(req.query.include_hidden || "").toLowerCase() === "true";
+
+  let items = includeHidden ? state.items : getVisibleItems(state.items);
+  if (town) {
+    items = items.filter((x) => (x.paese || "").toLowerCase() === town);
+  }
+  if (Number.isFinite(limit) && limit > 0) {
+    items = items.slice(0, limit);
+  }
+
+  res.json({
+    updated_at: state.lastUpdate,
+    count: items.length,
+    hidden_count: (state.items || []).filter((item) => item && item.hidden_old).length,
+    items,
+  });
+});
+
+app.get("/obituaries/latest", (req, res) => {
+  const limit = Math.max(1, Number(req.query.limit || 10));
+  const includeHidden = String(req.query.include_hidden || "").toLowerCase() === "true";
+  const items = (includeHidden ? state.items : getVisibleItems(state.items)).slice(0, limit);
+  res.json({
+    updated_at: state.lastUpdate,
+    count: items.length,
+    items,
+  });
+});
+
+app.get("/calendar.ics", (req, res) => {
+  const includeHidden = String(req.query.include_hidden || "").toLowerCase() === "true";
+  const configuredTowns = Array.isArray(config.towns) ? config.towns : [];
+  const defaultTownSet = new Set(
+    configuredTowns
+      .map((x) => String(x || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const townsQuery = String(req.query.towns || "").trim();
+  const queryTownSet = new Set(
+    townsQuery
+      .split(",")
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const activeTownSet = queryTownSet.size > 0 ? queryTownSet : defaultTownSet;
+
+  let items = includeHidden ? state.items : getVisibleItems(state.items);
+  if (activeTownSet.size > 0) {
+    items = items.filter((item) => activeTownSet.has(String(item?.paese || "").trim().toLowerCase()));
+  }
+
+  items = [...items].sort(
+    (a, b) => dateToSortableNumber(b.data_funerale) - dateToSortableNumber(a.data_funerale)
+  );
+
+  const calendarName =
+    activeTownSet.size > 0
+      ? `Funerali - ${Array.from(activeTownSet).join(", ")}`
+      : "Funerali";
+  const ics = buildCalendarIcs(items, calendarName);
+
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", 'inline; filename="funerali.ics"');
+  res.send(ics);
+});
+
+app.post("/refresh", async (_, res) => {
+  const result = await refreshData();
+  res.json({
+    ok: !result.error,
+    ...result,
+    last_update: state.lastUpdate,
+  });
+});
+
+app.post("/clear-ai-cache", async (req, res) => {
+  clearAiCache();
+  const andRefresh = String(req.query.refresh || "").toLowerCase() === "true";
+  if (andRefresh) {
+    const result = await refreshData();
+    return res.json({ ok: true, cache_cleared: true, refresh: result, last_update: state.lastUpdate });
+  }
+  res.json({ ok: true, cache_cleared: true });
+});
+
+app.post("/reset-source/:sourceId", (req, res) => {
+  const sourceId = (req.params.sourceId || "").toString().trim();
+  if (!sourceId || !SOURCES.find((s) => s.id === sourceId)) {
+    return res.status(400).json({ ok: false, error: "Invalid source ID" });
+  }
+
+  const before = state.items.length;
+  state.items = state.items.filter((item) => item.source_id !== sourceId);
+  const removed = before - state.items.length;
+  state.forceReprocessSources.add(sourceId);
+  state.lastUpdate = new Date().toISOString();
+  writeData(state.items);
+  console.log(`[reset-source] ${sourceId}: rimossi ${removed} necrologi`);
+  res.json({ ok: true, removed, last_update: state.lastUpdate });
+});
+
+app.post("/mqtt-republish", async (req, res) => {
+  const simulateNew = String(req.query.simulate_new || "").toLowerCase() === "true";
+  await publishMqttUpdate({
+    config,
+    items: state.items,
+    updatedAt: state.lastUpdate,
+    newItems: simulateNew ? getVisibleItems(state.items) : [],
+  });
+  res.json({ ok: true, simulate_new: simulateNew, count: getVisibleItems(state.items).length });
+});
+
+app.post("/refresh-source/:sourceId", async (req, res) => {
+  const sourceId = (req.params.sourceId || "").toString().trim();
+  if (!sourceId || !SOURCES.find((s) => s.id === sourceId)) {
+    return res.status(400).json({ ok: false, error: "Invalid source ID" });
+  }
+
+  const result = await refreshSource(sourceId);
+  res.json({
+    ...result,
+    last_update: state.lastUpdate,
+  });
+});
+
+app.get("/refresh-source-stream/:sourceId", (req, res) => {
+  const sourceId = (req.params.sourceId || "").toString().trim();
+  const source = SOURCES.find((s) => s.id === sourceId);
+  
+  if (!sourceId || !source) {
+    return res.status(400).json({ ok: false, error: "Invalid source ID" });
+  }
+
+  if (state.running) {
+    return res.status(409).json({ ok: false, error: "Already scanning" });
+  }
+
+  state.running = true;
+  state.lastError = null;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  (async () => {
+    try {
+      const previousItems = state.items;
+      const forceReprocess = state.forceReprocessSources.has(sourceId);
+      if (forceReprocess) {
+        console.info(`[scraper] Forzato reprocess senza cache (stream): source=${source.id}`);
+      }
+      sendEvent("start", { source: source.label, status: "Inizio scansione...", at: new Date().toISOString() });
+
+      let sourceItems = await scrapeSource(source, config, (progress) => {
+        sendEvent("progress", {
+          current: progress.current,
+          total: progress.total,
+          title: progress.title,
+          count: progress.count,
+          percent: Math.round((progress.current / progress.total) * 100),
+          source: source.label,
+          at: new Date().toISOString(),
+        });
+      }, forceReprocess ? [] : previousItems);
+
+      sendEvent("persist", { status: "Download immagini...", at: new Date().toISOString() });
+
+      if (config.save_images) {
+        sourceItems = await persistImages(sourceItems);
+      }
+
+      sendEvent("merge", { status: "Merge con dati precedenti...", at: new Date().toISOString() });
+
+      const sourceUrlSet = new Set(sourceItems.map((item) => item.id));
+      const otherItems = state.items.filter((item) => !sourceUrlSet.has(item.id));
+
+      const merged = [...sourceItems, ...otherItems].sort((a, b) => {
+        const aDate = dateToSortableNumber(a.data_funerale);
+        const bDate = dateToSortableNumber(b.data_funerale);
+        return bDate - aDate;
+      });
+
+      state.items = merged;
+      state.lastUpdate = new Date().toISOString();
+      writeData(merged);
+      await publishMqttUpdate({
+        config,
+        items: state.items,
+        updatedAt: state.lastUpdate,
+        newItems: getNewItems(previousItems, state.items),
+      });
+      if (forceReprocess) {
+        state.forceReprocessSources.delete(sourceId);
+      }
+
+      sendEvent("complete", {
+        ok: true,
+        count: sourceItems.length,
+        source: source.label,
+        last_update: state.lastUpdate,
+        at: new Date().toISOString(),
+      });
+
+      res.end();
+    } catch (error) {
+      state.lastError = error.message;
+      console.error(`[refresh-stream] Errore ${source.label}:`, error);
+      sendEvent("error", {
+        ok: false,
+        error: error.message,
+        at: new Date().toISOString(),
+      });
+      res.end();
+    } finally {
+      state.running = false;
+    }
+  })();
+});
+
+app.get("/refresh-stream", (req, res) => {
+  if (state.running) {
+    return res.status(409).json({ ok: false, error: "Already scanning" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  (async () => {
+    const result = await refreshAllWithProgress(sendEvent);
+    sendEvent("complete", result);
+    res.end();
+  })();
+});
+
+app.listen(config.listen_port, async () => {
+  console.log(`[server] Necrologi add-on in ascolto su porta ${config.listen_port}`);
+  await initMqtt(config);
+  await refreshData();
+  const intervalMs = Math.max(10, Number(config.scan_interval_minutes || 60)) * 60 * 1000;
+  setInterval(refreshData, intervalMs);
+  console.log(`[server] Refresh schedulato ogni ${config.scan_interval_minutes} minuti`);
+});

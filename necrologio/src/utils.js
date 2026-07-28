@@ -1,0 +1,313 @@
+function normalizeText(value) {
+  return (value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeForMatch(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function absoluteUrl(base, maybeRelative) {
+  if (!maybeRelative) {
+    return null;
+  }
+  try {
+    const result = new URL(maybeRelative, base).toString();
+    // Scarta URL che contengono letteralmente 'undefined' o 'null'
+    if (/\/undefined$|\/null$/.test(result)) {
+      return null;
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function splitName(fullName) {
+  const clean = normalizeText(fullName);
+  if (!clean) {
+    return { nome: "", cognome: "" };
+  }
+
+  const parts = clean.split(" ");
+  if (parts.length === 1) {
+    return { nome: parts[0], cognome: "" };
+  }
+
+  return {
+    nome: parts[0],
+    cognome: parts.slice(1).join(" "),
+  };
+}
+
+function cleanPersonTitle(value) {
+  let text = normalizeText(value);
+  if (!text) {
+    return "";
+  }
+
+  text = text
+    .replace(/\b\d{1,2}\s+[A-Za-zÀ-ÖØ-öø-ÿ]+\s+\d{4}\b/gi, "")
+    .replace(/\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b/gi, "")
+    .replace(/\b(ore\s+\d{1,2}([:.]\d{2})?)\b/gi, "")
+    .replace(/[|\-–—]+\s*$/, "")
+    .replace(/^necrologio\s+di\s+/i, "");
+
+  return normalizeText(text);
+}
+
+function findTown(haystack, configuredTowns) {
+  const text = normalizeForMatch(haystack);
+  const aliases = {
+    orsago: ["orsago"],
+    cordignano: ["cordignano"],
+    godega: ["godega", "godega di sant'urbano", "godega di santurbano", "bibano"],
+    "san fior": ["san fior"],
+  };
+
+  for (const town of configuredTowns) {
+    const key = normalizeForMatch(town);
+    const keys = aliases[key] || [key];
+    if (keys.some((k) => text.includes(k))) {
+      return town;
+    }
+  }
+
+  return null;
+}
+
+function extractDateFromText(text) {
+  const value = normalizeText(text);
+  if (!value) {
+    return null;
+  }
+
+  const regexes = [
+    /(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i,
+    /(\d{1,2}\s+[A-Za-zÀ-ÖØ-öø-ÿ]+\s+\d{4})/i,
+  ];
+
+  for (const re of regexes) {
+    const match = value.match(re);
+    if (match) {
+      const candidate = normalizeText(match[1]);
+      if (isPlausibleDate(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
+}
+
+function isPlausibleDate(candidate) {
+  const text = normalizeText(candidate);
+  const slash = text.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+  if (slash) {
+    const dd = Number(slash[1]);
+    const mm = Number(slash[2]);
+    let yyyy = Number(slash[3]);
+    if (yyyy < 100) {
+      yyyy += 2000;
+    }
+
+    if (dd < 1 || dd > 31 || mm < 1 || mm > 12) {
+      return false;
+    }
+
+    return yyyy >= 2020 && yyyy <= 2100;
+  }
+
+  const long = text.match(/^(\d{1,2})\s+([A-Za-zÀ-ÖØ-öø-ÿ]+)\s+(\d{4})$/);
+  if (long) {
+    const dd = Number(long[1]);
+    const yyyy = Number(long[3]);
+    return dd >= 1 && dd <= 31 && yyyy >= 2020 && yyyy <= 2100;
+  }
+
+  return false;
+}
+
+function extractFuneralDate(text) {
+  const value = normalizeText(text);
+  if (!value) {
+    return null;
+  }
+
+  const dateRegex =
+    /(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}\s+[A-Za-zÀ-ÖØ-öø-ÿ]+\s+\d{4})/i;
+  const funeralContextRegex = /(funeral[ei]|esequie|cerimonia(?:\s+funebre)?|rosario|rito funebre)/i;
+  const noisyContextRegex = /(pubblicat[oa]|aggiornat[oa]|copyright|cookie|privacy)/i;
+
+  const funeralSentence = value.match(
+    /(funeral[ei]|esequie|cerimonia(?:\s+funebre)?|rosario|rito funebre)[^.\n]{0,180}(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}\s+[A-Za-zÀ-ÖØ-öø-ÿ]+\s+\d{4})/i
+  );
+
+  if (funeralSentence) {
+    const candidate = normalizeText(funeralSentence[2]);
+    return isPlausibleDate(candidate) ? candidate : null;
+  }
+
+  const dateBeforeContext = value.match(
+    /(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}\s+[A-Za-zÀ-ÖØ-öø-ÿ]+\s+\d{4})[^.\n]{0,120}(funeral[ei]|esequie|cerimonia(?:\s+funebre)?|rosario|rito funebre)/i
+  );
+  if (dateBeforeContext) {
+    const candidate = normalizeText(dateBeforeContext[1]);
+    return isPlausibleDate(candidate) ? candidate : null;
+  }
+
+  // Ultimo fallback: cerca date in finestre testuali che contengono riferimenti espliciti al funerale.
+  const globalDateRegex = new RegExp(dateRegex.source, "gi");
+  let match;
+  while ((match = globalDateRegex.exec(value)) !== null) {
+    const candidate = normalizeText(match[1]);
+    if (!isPlausibleDate(candidate)) {
+      continue;
+    }
+
+    const start = Math.max(0, match.index - 140);
+    const end = Math.min(value.length, globalDateRegex.lastIndex + 140);
+    const context = value.slice(start, end);
+
+    if (funeralContextRegex.test(context) && !noisyContextRegex.test(context)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function dateToSortableNumber(value) {
+  const text = normalizeText(value);
+  if (!text) {
+    return 0;
+  }
+
+  const slash = text.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+  if (slash) {
+    const dd = Number(slash[1]);
+    const mm = Number(slash[2]);
+    let yyyy = Number(slash[3]);
+    if (yyyy < 100) {
+      yyyy += 2000;
+    }
+    return yyyy * 10000 + mm * 100 + dd;
+  }
+
+  const monthMap = {
+    gennaio: 1,
+    febbraio: 2,
+    marzo: 3,
+    aprile: 4,
+    maggio: 5,
+    giugno: 6,
+    luglio: 7,
+    agosto: 8,
+    settembre: 9,
+    ottobre: 10,
+    novembre: 11,
+    dicembre: 12,
+  };
+
+  const longForm = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
+
+  if (longForm) {
+    const dd = Number(longForm[1]);
+    const mm = monthMap[longForm[2]] || 0;
+    const yyyy = Number(longForm[3]);
+    return yyyy * 10000 + mm * 100 + dd;
+  }
+
+  return 0;
+}
+
+function parseDateValue(value) {
+  const text = normalizeText(value);
+  if (!text) {
+    return null;
+  }
+
+  const slash = text.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+  if (slash) {
+    const dd = Number(slash[1]);
+    const mm = Number(slash[2]);
+    let yyyy = Number(slash[3]);
+    if (yyyy < 100) {
+      yyyy += 2000;
+    }
+
+    const parsed = new Date(yyyy, mm - 1, dd);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const monthMap = {
+    gennaio: 1,
+    febbraio: 2,
+    marzo: 3,
+    aprile: 4,
+    maggio: 5,
+    giugno: 6,
+    luglio: 7,
+    agosto: 8,
+    settembre: 9,
+    ottobre: 10,
+    novembre: 11,
+    dicembre: 12,
+  };
+
+  const longForm = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
+
+  if (!longForm) {
+    return null;
+  }
+
+  const dd = Number(longForm[1]);
+  const mm = monthMap[longForm[2]] || 0;
+  const yyyy = Number(longForm[3]);
+  if (!mm) {
+    return null;
+  }
+
+  const parsed = new Date(yyyy, mm - 1, dd);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isOlderThanDays(value, days) {
+  const parsed = parseDateValue(value);
+  if (!parsed) {
+    return false;
+  }
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const threshold = new Date(startOfToday);
+  threshold.setDate(threshold.getDate() - Number(days || 0));
+
+  return parsed < threshold;
+}
+
+module.exports = {
+  normalizeText,
+  normalizeForMatch,
+  absoluteUrl,
+  splitName,
+  cleanPersonTitle,
+  findTown,
+  extractDateFromText,
+  extractFuneralDate,
+  dateToSortableNumber,
+  parseDateValue,
+  isOlderThanDays,
+};
