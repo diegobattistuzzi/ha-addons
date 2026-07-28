@@ -1,13 +1,13 @@
-# Add-on di Diego Battistuzzi
+# Diego Battistuzzi's Add-ons
 
-Repository di add-on Home Assistant. Per installarlo:
+Home Assistant add-on repository. To install:
 
-*Impostazioni → Add-on → Add-on Store → ⋮ → Repository* e aggiungi:
+*Settings → Add-ons → Add-on Store → ⋮ → Repositories* and add:
 
 ```
 https://github.com/diegobattistuzzi/ha-addons
 ```
 
-## Add-on disponibili
+## Available add-ons
 
-- **gestionecontabile** — Gestione spese familiari con AI e Open Banking PSD2. Pubblicato automaticamente dal branch `publish` del repo [gestionecontabile](https://github.com/diegobattistuzzi/gestionecontabile). Non modificare i file in questa cartella direttamente: verranno sovrascritti alla prossima pubblicazione.
+- **gestionecontabile** — Household expense management with AI categorization and Open Banking (PSD2). Automatically published from the `publish` branch of the [gestionecontabile](https://github.com/diegobattistuzzi/gestionecontabile) repo. Do not edit the files in this folder directly: they will be overwritten on the next publish.
