@@ -1,0 +1,47 @@
+{
+  "documents": {
+    "title": "Documenti",
+    "tabs": {
+      "coverage": "Copertura conti",
+      "documents": "Documenti"
+    },
+    "loading": "Caricamento...",
+    "coverage": {
+      "empty": "Nessun estratto conto importato ancora. Importa un CSV/Excel/PDF da Transazioni → Importa per vedere qui da che data a che data sei coperto per ogni conto.",
+      "infoBox": "Per ogni conto, gli estratti importati ordinati per periodo (dedotto dalle date reali delle transazioni di ognuno, non dal nome del file). Un buco tra un estratto e il successivo è segnalato.",
+      "coveredRange": "coperto dal {from} al {to}",
+      "table": {
+        "file": "File",
+        "from": "Dal",
+        "to": "Al",
+        "transactions": "Transazioni"
+      },
+      "gapWarning": "⚠️ Buco di {days} {unit} prima di questo estratto",
+      "dayUnit": {
+        "singular": "giorno",
+        "plural": "giorni"
+      }
+    },
+    "list": {
+      "empty": "Nessun documento archiviato. Gli estratti conto (CSV, Excel, PDF) caricati da Transazioni → Importa vengono conservati qui.",
+      "table": {
+        "file": "File",
+        "account": "Conto",
+        "uploadedAt": "Caricato il",
+        "size": "Dimensione"
+      },
+      "tag": {
+        "attachedTransaction": "📎 Allegato transazione #{id}",
+        "statement": "📄 Estratto conto"
+      },
+      "accountFallback": "Conto #{id}",
+      "download": "⬇ Scarica",
+      "deleteTitle": "Elimina"
+    },
+    "confirmDelete": "Eliminare \"{filename}\"?",
+    "error": {
+      "loadFailed": "Errore caricamento",
+      "deleteFailed": "Errore eliminazione"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "actions": {
+      "addExpense": "+ Spesa",
+      "import": "↑ Importa"
+    },
+    "kpi": {
+      "monthlyExpenses": "Spese del mese",
+      "monthlyIncome": "Entrate del mese",
+      "pendingTransactions": "Transazioni pendenti",
+      "toCategorize": "da categorizzare",
+      "commonAccountsBalance": "Saldo conti comuni"
+    },
+    "trend": {
+      "title": "Andamento spese — ultimi 6 mesi"
+    },
+    "budget": {
+      "titleWithMonth": "Budget per categoria — {month}",
+      "annual": "annuale",
+      "noTransactions": "Nessuna transazione questo mese"
+    },
+    "sensors": {
+      "title": "Sensori HA",
+      "budgetOkMonth": "Budget OK (mese)",
+      "budgetOkYear": "Budget OK (anno)",
+      "bankSync": "Sync bancario",
+      "expensesToday": "Spese oggi",
+      "expensesYear": "Spese anno",
+      "monthlyOverBudget": "Budget mensili sforati",
+      "annualOverBudget": "Budget annuali sforati"
+    },
+    "loading": "Caricamento..."
+  }
+}

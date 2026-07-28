@@ -1,0 +1,49 @@
+{
+  "categories": {
+    "title": "Expense categories",
+    "tabs": {
+      "expense": "Expenses",
+      "income": "Income",
+      "transfer": "Transfers"
+    },
+    "emptyState": "No categories of type \"{type}\".",
+    "headers": {
+      "code": "Code",
+      "icon": "Icon",
+      "monthlyBudget": "Monthly budget",
+      "annualBudget": "Annual budget",
+      "aiKeywords": "AI keywords"
+    },
+    "perMonth": "{amount}/month",
+    "perYear": "{amount}/year",
+    "deactivateTitle": "Deactivate (no longer suggested in menus, but stays in history)",
+    "reactivateTitle": "Reactivate",
+    "deleteTitle": "Delete permanently",
+    "editTitle": "Edit category",
+    "newTitle": "New category",
+    "form": {
+      "codeLabel": "Code (e.g. SA, T1, RIMB)",
+      "codePlaceholder": "SA",
+      "iconLabel": "Icon (emoji)",
+      "nameLabel": "Name *",
+      "namePlaceholder": "e.g. Groceries",
+      "monthlyBudgetLabel": "Monthly budget (€)",
+      "annualBudgetLabel": "Annual budget (€)",
+      "annualBudgetHint": "Optional. Useful for infrequent expenses (e.g. taxes, vacations) where a monthly limit doesn't make sense.",
+      "parentLabel": "Parent category",
+      "noParentOption": "— none (top-level category) —",
+      "hasChildrenHint": "This category already has sub-categories: it can't have a parent of its own.",
+      "aiKeywordsLabel": "AI keywords (comma-separated)",
+      "aiKeywordsPlaceholder": "supermarket, walmart, target",
+      "aiKeywordsHint": "The AI uses these words to automatically recognize the category."
+    },
+    "typeOptions": {
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer"
+    },
+    "nameRequired": "Name is required",
+    "deleteConfirm": "Permanently delete \"{name}\"? Transactions already assigned to this category will be left without a category.",
+    "deleteError": "Deletion error"
+  }
+}

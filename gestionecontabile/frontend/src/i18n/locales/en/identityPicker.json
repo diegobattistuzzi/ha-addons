@@ -1,0 +1,6 @@
+{
+  "identityPicker": {
+    "title": "Who are you?",
+    "hint": "Choose your profile: you'll see your personal expenses along with the shared ones, but not other people's personal expenses."
+  }
+}

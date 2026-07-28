@@ -1,0 +1,30 @@
+{
+  "app": {
+    "name": "Spese di casa",
+    "sub": "Home Assistant",
+    "navMain": "Principale",
+    "navRegistry": "Anagrafiche",
+    "navConfig": "Configurazione",
+    "nav": {
+      "dashboard": "Dashboard",
+      "transactions": "Transazioni",
+      "reports": "Report",
+      "balance": "Bilancio",
+      "documents": "Documenti",
+      "email": "Messaggi email",
+      "persons": "Persone",
+      "accounts": "Conti",
+      "categories": "Categorie",
+      "setup": "Impostazioni",
+      "guida": "Guida",
+      "mobileScan": "Scansiona"
+    },
+    "viewAs": "Vedi come",
+    "language": "Lingua",
+    "denied": {
+      "title": "Accesso non autorizzato",
+      "mobileText": "Questo link non è valido o è stato revocato. Chiedi a chi gestisce l'app un nuovo QR di accesso.",
+      "appText": "Questa pagina è accessibile solo da dentro Home Assistant, oppure da un link mobile valido."
+    }
+  }
+}

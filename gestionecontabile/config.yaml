@@ -1,0 +1,50 @@
+name: Spese di casa
+version: "1.0.16"
+slug: casaspese
+description: Gestione spese familiari con AI e Open Banking PSD2
+url: https://github.com/user/casaspese-addon
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+startup: application
+boot: auto
+ingress: true
+ingress_port: 8099
+homeassistant_api: true
+services:
+  - mqtt:want
+panel_icon: mdi:wallet-outline
+panel_title: Spese di casa
+map:
+  - config:rw
+  - data:rw
+# Porta esposta sull'host, indipendente dall'Ingress: serve solo per
+# l'accesso mobile da fuori la rete di Home Assistant. Da proteggere
+# SEMPRE con un reverse proxy HTTPS (nginx) davanti, mai raggiungibile
+# direttamente da internet - vedi README.md per la configurazione.
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: "Accesso pubblico mobile (dietro reverse proxy HTTPS - non esporre direttamente)"
+options:
+  ai_provider: openai
+  ai_model: gpt-4o-mini
+  openai_api_key: ""
+  anthropic_api_key: ""
+  nordigen_secret_id: ""
+  nordigen_secret_key: ""
+  sync_interval_minutes: 30
+  ha_token: ""
+  public_url: ""
+schema:
+  ai_provider: list(openai|anthropic)
+  ai_model: str
+  openai_api_key: str
+  anthropic_api_key: str
+  nordigen_secret_id: str
+  nordigen_secret_key: str
+  sync_interval_minutes: int(5,1440)
+  ha_token: str
+  public_url: str

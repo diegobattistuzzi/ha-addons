@@ -1,0 +1,37 @@
+{
+  "reports": {
+    "title": "Reports & Analysis",
+    "exportPdf": "Export PDF",
+    "tabs": {
+      "trend": "Trend",
+      "custom": "Custom reports"
+    },
+    "allAccounts": "All accounts",
+    "monthlyTrend": "Monthly trend",
+    "expensesByCategory": "Expenses by category",
+    "noDataPeriod": "No data for this period",
+    "annual": "annual",
+    "personalVsFamily": "Personal vs family",
+    "summary": "Summary",
+    "totalExpensesMonth": "Total expenses (month)",
+    "totalIncomeMonth": "Total income (month)",
+    "balanceMonth": "Balance (month)",
+    "totalExpensesYear": "Total expenses (year)",
+    "totalIncomeYear": "Total income (year)",
+    "expenseComparison": "Expense comparison",
+    "vsLastMonth": "Compared to last month",
+    "vsSameMonthLastYear": "Compared to {month}",
+    "topMerchantsMonth": "Top merchants (month)",
+    "occurrences": "({count}x)",
+    "noExpensesPeriod": "No expenses in this period",
+    "activeSubscriptions": "Active subscriptions",
+    "perMonthAmount": "{amount}/month",
+    "noSubscriptions": "No subscriptions detected",
+    "notAvailable": "n/a",
+    "destinations": {
+      "family": "Family",
+      "personal": "Personal",
+      "split": "Shared"
+    }
+  }
+}

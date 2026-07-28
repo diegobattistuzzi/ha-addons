@@ -1,0 +1,47 @@
+{
+  "documents": {
+    "title": "Documents",
+    "tabs": {
+      "coverage": "Account coverage",
+      "documents": "Documents"
+    },
+    "loading": "Loading...",
+    "coverage": {
+      "empty": "No bank statement imported yet. Import a CSV/Excel/PDF from Transactions → Import to see here which date range each account is covered by.",
+      "infoBox": "For each account, the imported statements sorted by period (derived from the actual transaction dates of each one, not from the file name). A gap between one statement and the next is flagged.",
+      "coveredRange": "covered from {from} to {to}",
+      "table": {
+        "file": "File",
+        "from": "From",
+        "to": "To",
+        "transactions": "Transactions"
+      },
+      "gapWarning": "⚠️ Gap of {days} {unit} before this statement",
+      "dayUnit": {
+        "singular": "day",
+        "plural": "days"
+      }
+    },
+    "list": {
+      "empty": "No documents archived. Bank statements (CSV, Excel, PDF) uploaded from Transactions → Import are stored here.",
+      "table": {
+        "file": "File",
+        "account": "Account",
+        "uploadedAt": "Uploaded on",
+        "size": "Size"
+      },
+      "tag": {
+        "attachedTransaction": "📎 Attached to transaction #{id}",
+        "statement": "📄 Bank statement"
+      },
+      "accountFallback": "Account #{id}",
+      "download": "⬇ Download",
+      "deleteTitle": "Delete"
+    },
+    "confirmDelete": "Delete \"{filename}\"?",
+    "error": {
+      "loadFailed": "Error loading data",
+      "deleteFailed": "Error deleting"
+    }
+  }
+}

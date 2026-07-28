@@ -1,0 +1,23 @@
+{
+  "emailReceipts": {
+    "title": "Messaggi email",
+    "empty": "Nessuna ricevuta email trovata. Avviala da Persone → 📧 \"Importa storico email\".",
+    "infoBoxLine1": "Le ricevute email (PayPal, Amazon, ...) vengono abbinate automaticamente a una transazione bancaria con importo uguale e data entro 5 giorni di distanza.",
+    "infoBoxLine2": "Quelle \"in attesa\" verranno riprovate al prossimo import di estratto conto, oppure subito con il bottone qui sotto.",
+    "rematchButton": "🔁 Riabbina mail",
+    "working": "...",
+    "sender": "Mittente",
+    "subject": "Oggetto",
+    "receivedAt": "Ricevuta il",
+    "status": "Stato",
+    "matchedTag": "✓ Abbinata (transazione #{id})",
+    "pendingTag": "✉ In attesa",
+    "unmatchButton": "✕ Slega",
+    "errorLoading": "Errore caricamento",
+    "matchedCount": "✓ {count} ricevute abbinate",
+    "noNewMatch": "Nessun nuovo abbinamento trovato",
+    "errorRematch": "Errore riabbinamento",
+    "confirmUnmatch": "Slegare questa ricevuta dalla transazione #{id}?",
+    "errorUnmatch": "Errore nello slegare la ricevuta"
+  }
+}

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dev-dist/
+.vite/
+esempio/
+.env
+*.db
+*.db-shm
+*.db-wal
+*.log
+drizzle/
+.DS_Store
+__pycache__/
+*.pyc
+**/data/*
+!**/data/options.json.example
+.claude/settings.local.json

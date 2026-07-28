@@ -1,0 +1,75 @@
+{
+  "accounts": {
+    "title": "Bank accounts",
+    "addButton": "Add account",
+    "empty": "No accounts yet. Add one to start tracking expenses.",
+    "settlementLabel": "↳ settled to: {name}",
+    "confirmDeactivate": "Deactivate account \"{name}\"?",
+    "modal": {
+      "editTitle": "Edit account",
+      "addTitle": "New account"
+    },
+    "form": {
+      "name": "Name *",
+      "namePlaceholder": "e.g. Fineco Shared",
+      "bank": "Bank",
+      "type": "Type",
+      "ownership": "Ownership",
+      "owner": "Owner *",
+      "choosePerson": "Choose the person",
+      "settlementAccount": "Settlement account",
+      "none": "— none —",
+      "settlementHint": "The checking account the monthly summary charge is billed to. Used to recognize and avoid double counting when you import that account's statement.",
+      "cardNumber": "Card number (optional)",
+      "cardNumberPlaceholder": "e.g. 7100 (last digits, can be masked)",
+      "cardNumberHint": "Helps the AI automatically recognize the account when you import a statement for this card.",
+      "iban": "IBAN (optional)",
+      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000"
+    },
+    "openingBalance": {
+      "buttonTitle": "Set opening balance",
+      "title": "Opening balance — {name}",
+      "empty": "No opening balance set: the account balance starts at zero and sums every transaction.",
+      "dateLabel": "Date",
+      "amountLabel": "Amount (€)",
+      "hint": "One checkpoint per calendar year: the account balance is computed as the latest checkpoint (by date) plus every transaction after it. Adding a new checkpoint each year lets you realign the balance to the real bank statement.",
+      "save": "Save checkpoint",
+      "confirmDelete": "Delete this opening balance checkpoint?"
+    },
+    "types": {
+      "checking": "Checking account",
+      "creditCard": "Credit card",
+      "savings": "Savings",
+      "cash": "Cash",
+      "mealVoucher": "Meal vouchers"
+    },
+    "typeShort": {
+      "checking": "Checking",
+      "creditCard": "Credit card",
+      "savings": "Savings",
+      "cash": "Cash",
+      "mealVoucher": "Meal vouchers"
+    },
+    "ownership": {
+      "shared": "Shared",
+      "personal": "Personal"
+    },
+    "banks": {
+      "fineco": "Fineco Bank",
+      "ing": "ING Italia",
+      "n26": "N26",
+      "revolut": "Revolut",
+      "wise": "Wise",
+      "hellobank": "Hello Bank",
+      "cash": "Cash",
+      "other": "Other"
+    },
+    "errors": {
+      "loadFailed": "Loading error",
+      "saveFailed": "Save error",
+      "nameRequired": "Name is required",
+      "ownerRequired": "Choose the personal account's owner",
+      "generic": "Error"
+    }
+  }
+}

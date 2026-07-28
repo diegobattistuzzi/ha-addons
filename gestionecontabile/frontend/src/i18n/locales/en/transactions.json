@@ -1,0 +1,173 @@
+{
+  "transactions": {
+    "topbar": {
+      "title": "Transactions",
+      "count": "{count} movements"
+    },
+    "actions": {
+      "manualAdd": "+ Add",
+      "importBank": "↑ Import statement"
+    },
+    "aiQuickAdd": {
+      "placeholder": "✨ E.g.: €23 pizza last night with amex",
+      "analyze": "Analyze"
+    },
+    "aiBanner": {
+      "text": "transactions to confirm (categorized by AI)",
+      "show": "Show",
+      "approveAll": "✓ Approve all"
+    },
+    "reimbBanner": {
+      "text": "to claim back from work",
+      "show": "Show"
+    },
+    "filters": {
+      "search": "Search...",
+      "allAccounts": "All accounts",
+      "allCategories": "All categories",
+      "all": "All",
+      "personalAll": "Personal (all)",
+      "personalOf": "Personal - {name}",
+      "reimbAll": "Reimbursement: all",
+      "reimbPending": "To be reimbursed",
+      "reimbReimbursed": "Already reimbursed",
+      "statusAll": "Status: all",
+      "statusPending": "To confirm",
+      "statusConfirmed": "Confirmed",
+      "filterBtn": "Filter"
+    },
+    "destination": {
+      "family": "Family",
+      "personal": "Personal",
+      "split": "Split"
+    },
+    "bulkBar": {
+      "selectedCount": "{count} selected",
+      "categoryNoChange": "Category: don't change",
+      "accountNoChange": "Account: don't change",
+      "destNoChange": "Destination: don't change",
+      "paidByNoChange": "Paid by: don't change",
+      "clearOption": "— clear —",
+      "reimbNoChange": "Reimbursement: don't change",
+      "markReimbursable": "Mark \"to reimburse\"",
+      "apply": "Apply",
+      "confirm": "✓ Confirm",
+      "rejectAi": "✕ Reject AI suggestion",
+      "categorizeAi": "✦ Recognize category (AI)",
+      "delete": "🗑 Delete",
+      "deselect": "Deselect"
+    },
+    "list": {
+      "header": {
+        "transaction": "Transaction",
+        "dest": "Dest.",
+        "from": "From",
+        "account": "Account"
+      },
+      "checkBackend": "Check that the backend is running and press F5 to retry.",
+      "empty": "No transactions.",
+      "emptyHint": "Add manually or import a statement."
+    },
+    "row": {
+      "openSourceStatement": "Open source statement",
+      "attachmentsTitle": "{count} attachment(s)",
+      "goToMatchedEmail": "Go to matched email",
+      "clickToChangeCategory": "Click to change category",
+      "confirmAiCategory": "Confirm the category suggested by AI as-is",
+      "clickToChangeDest": "Click to change destination",
+      "reimbursedOn": "Reimbursed on {date}",
+      "toReimburse": "To claim back from work: {amount}",
+      "reimbDoneBadge": "✓ reimb.",
+      "reopenTitle": "Reopen (not yet reimbursed)",
+      "markReimbursedTitle": "Mark as reimbursed"
+    },
+    "manualModal": {
+      "editTitle": "Edit transaction",
+      "newTitle": "New transaction",
+      "dateLabel": "Date *",
+      "amountLabel": "Amount * (negative = expense)",
+      "descriptionLabel": "Description *",
+      "descriptionPlaceholder": "e.g. Supermarket Esselunga",
+      "accountLabel": "Account *",
+      "selectPlaceholder": "— select —",
+      "destinationLabel": "Destination",
+      "destFamily": "Family (per-head share)",
+      "destSplit": "Split (with a person)",
+      "paidByLabel": "Paid by",
+      "notSpecified": "— not specified —",
+      "splitWithLabel": "Split with",
+      "choosePerson": "— choose person —",
+      "splitPercentLabel": "Share of the payer (%)",
+      "cashLabel": "Cash",
+      "reimbursableLabel": "To reimburse (work)",
+      "reimbAmountLabel": "Amount requested for reimbursement",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Additional notes",
+      "attachmentsLabel": "Attachments (receipts, invoices...)",
+      "removeAttachmentTitle": "Remove attachment",
+      "uploading": "Uploading...",
+      "addAttachment": "+ Add attachment",
+      "saveChanges": "Save changes"
+    },
+    "importModal": {
+      "title": "Import statement",
+      "csvDesc": "All Italian bank formats",
+      "excelDesc": "Spreadsheets",
+      "pdfDesc": "Requires an AI task configured in Home Assistant",
+      "linkAccountLabel": "Link transactions to an account (optional)",
+      "autoDetect": "— auto-detect from file —",
+      "personalAccountHint": "Personal account: transactions will be imported as personal expenses, visible only to {name}.",
+      "thisOwner": "this account holder",
+      "dragText": "Drag the file here or",
+      "dragLink": "click to choose",
+      "dragHint": "CSV, Excel (.xlsx), PDF — max 50 MB",
+      "analyzing": "Analyzing...",
+      "aiReadingPdf": "AI is reading the PDF",
+      "foundCount": "{count} transactions found so far",
+      "detectedBank": "Detected: {bank}",
+      "unknownBank": "unrecognized bank",
+      "ibanLabel": "IBAN {iban}",
+      "cardLabel": "card ...{card}",
+      "importError": "Import error",
+      "importedCount": "{count} transactions imported",
+      "fromFile": "from {filename}",
+      "aiAnalyzed": "analyzed with AI",
+      "aiCategorizedCount": "{count} automatically categorized, to confirm",
+      "duplicatesIgnored": "{count} transactions ignored as already imported previously",
+      "previewHeader": "Preview of first transactions:",
+      "importedAsUnconfirmed": "Transactions were imported as unconfirmed. You can approve them all from the banner at the top, or edit them individually.",
+      "transferSuggestionsHeader": "Possible credit card payments detected:",
+      "suggestionMatch": "{date} · matches the expenses of \"{cardAccountName}\" ({matchedAmount})",
+      "markedTransfer": "✓ Marked",
+      "markAsTransferBtn": "Mark as Transfer"
+    },
+    "confirms": {
+      "bulkDelete": "Permanently delete {count} selected transactions?",
+      "removeAttachment": "Remove attachment \"{filename}\"?",
+      "deleteTx": "Delete \"{name}\"?"
+    },
+    "errors": {
+      "loadFailed": "Error loading transactions",
+      "applyBulkFailed": "Error applying changes",
+      "confirmFailed": "Confirmation error",
+      "rejectAiFailed": "Error rejecting AI suggestion",
+      "categorizeAiFailed": "Error recognizing AI category",
+      "noCategorySuggested": "No category suggested: the selected transactions already have a category or a suggestion awaiting confirmation.",
+      "deleteFailed": "Deletion error",
+      "aiParseFailed": "AI analysis error",
+      "uploadAttachmentFailed": "Error uploading attachment",
+      "removeAttachmentFailed": "Error removing attachment",
+      "requiredFields": "Fill in the required fields (date, amount, description, account)",
+      "chooseSplitPerson": "Choose who to split the expense with",
+      "saveFailed": "Save error",
+      "toggleReimbursedFailed": "Error updating reimbursement status",
+      "updateCategoryFailed": "Error updating category",
+      "updateDestFailed": "Error updating destination",
+      "confirmCategoryFailed": "Error confirming category",
+      "importFailed": "Import error",
+      "httpError": "HTTP Error {status}",
+      "transferCategoryNotFound": "\"Transfers\" category not found",
+      "transferFailed": "Error"
+    }
+  }
+}

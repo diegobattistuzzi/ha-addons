@@ -1,0 +1,29 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "yes": "Yes",
+    "no": "No",
+    "total": "Total",
+    "date": "Date",
+    "name": "Name",
+    "type": "Type",
+    "amount": "Amount",
+    "description": "Description",
+    "category": "Category",
+    "noResults": "No results",
+    "error": "An error occurred",
+    "requiredField": "Required field"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "categoryPicker": {
+    "clearLabel": "— none —",
+    "placeholder": "Search category...",
+    "noResults": "No category found"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "app": {
+    "name": "Home Expenses",
+    "sub": "Home Assistant",
+    "navMain": "Main",
+    "navRegistry": "Registry",
+    "navConfig": "Configuration",
+    "nav": {
+      "dashboard": "Dashboard",
+      "transactions": "Transactions",
+      "reports": "Reports",
+      "balance": "Balance",
+      "documents": "Documents",
+      "email": "Email messages",
+      "persons": "People",
+      "accounts": "Accounts",
+      "categories": "Categories",
+      "setup": "Settings",
+      "guida": "Guide",
+      "mobileScan": "Scan"
+    },
+    "viewAs": "Viewing as",
+    "language": "Language",
+    "denied": {
+      "title": "Access denied",
+      "mobileText": "This link is invalid or has been revoked. Ask whoever manages the app for a new access QR.",
+      "appText": "This page is only accessible from inside Home Assistant, or from a valid mobile link."
+    }
+  }
+}

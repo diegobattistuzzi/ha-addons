@@ -1,0 +1,75 @@
+{
+  "accounts": {
+    "title": "Conti bancari",
+    "addButton": "Aggiungi conto",
+    "empty": "Nessun conto. Aggiungine uno per iniziare a tracciare le spese.",
+    "settlementLabel": "↳ appoggio: {name}",
+    "confirmDeactivate": "Disattivare il conto \"{name}\"?",
+    "modal": {
+      "editTitle": "Modifica conto",
+      "addTitle": "Nuovo conto"
+    },
+    "form": {
+      "name": "Nome *",
+      "namePlaceholder": "es. Fineco Comune",
+      "bank": "Banca",
+      "type": "Tipo",
+      "ownership": "Titolarità",
+      "owner": "Intestatario *",
+      "choosePerson": "Scegli la persona",
+      "settlementAccount": "Conto di appoggio",
+      "none": "— nessuno —",
+      "settlementHint": "Il conto corrente su cui arriva l'addebito mensile riepilogativo. Serve a riconoscere ed evitare la doppia conta quando importi l'estratto di quel conto.",
+      "cardNumber": "Numero carta (opzionale)",
+      "cardNumberPlaceholder": "es. 7100 (ultime cifre, anche mascherato)",
+      "cardNumberHint": "Aiuta l'AI a riconoscere automaticamente il conto quando importi un rendiconto di questa carta.",
+      "iban": "IBAN (opzionale)",
+      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000"
+    },
+    "openingBalance": {
+      "buttonTitle": "Imposta saldo iniziale",
+      "title": "Saldo iniziale — {name}",
+      "empty": "Nessun saldo iniziale impostato: il saldo del conto parte da zero e somma tutti i movimenti.",
+      "dateLabel": "Data",
+      "amountLabel": "Importo (€)",
+      "hint": "Un checkpoint per anno solare: il saldo del conto viene calcolato come l'ultimo checkpoint (per data) più tutti i movimenti successivi. Inserendo un nuovo checkpoint ogni inizio anno puoi riallineare il saldo all'estratto conto reale.",
+      "save": "Salva checkpoint",
+      "confirmDelete": "Eliminare questo checkpoint di saldo iniziale?"
+    },
+    "types": {
+      "checking": "Conto corrente",
+      "creditCard": "Carta di credito",
+      "savings": "Risparmio",
+      "cash": "Contanti",
+      "mealVoucher": "Buoni pasto"
+    },
+    "typeShort": {
+      "checking": "Corrente",
+      "creditCard": "Carta credito",
+      "savings": "Risparmio",
+      "cash": "Contanti",
+      "mealVoucher": "Buoni pasto"
+    },
+    "ownership": {
+      "shared": "Comune",
+      "personal": "Personale"
+    },
+    "banks": {
+      "fineco": "Fineco Bank",
+      "ing": "ING Italia",
+      "n26": "N26",
+      "revolut": "Revolut",
+      "wise": "Wise",
+      "hellobank": "Hello Bank",
+      "cash": "Contanti",
+      "other": "Altro"
+    },
+    "errors": {
+      "loadFailed": "Errore caricamento",
+      "saveFailed": "Errore salvataggio",
+      "nameRequired": "Il nome è obbligatorio",
+      "ownerRequired": "Scegli l'intestatario del conto personale",
+      "generic": "Errore"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "balance": {
+    "title": "Balance between persons",
+    "period": {
+      "month": "This month",
+      "all": "All time"
+    },
+    "loading": "Loading...",
+    "empty": {
+      "text": "No data — add persons and transactions with {paidBy} filled in."
+    },
+    "debt": {
+      "owes": "owes",
+      "to": "to",
+      "balanced": "Balance settled — no debt between persons."
+    },
+    "stats": {
+      "contributed": "Contributions to shared account",
+      "familySpent": "Share of shared expenses",
+      "personalSpent": "Personal expenses",
+      "netBalance": "Net balance"
+    },
+    "note": {
+      "title": "How it works:",
+      "body": "Every income into a shared account is considered a contribution from whoever paid. Family expenses are split equally. Personal expenses are entirely charged to whoever made them.",
+      "footerBefore": "For correct calculations always fill in the",
+      "paidBy": "\"Paid by\"",
+      "footerAfter": "field in transactions."
+    },
+    "errors": {
+      "loadFailed": "Loading error"
+    }
+  }
+}

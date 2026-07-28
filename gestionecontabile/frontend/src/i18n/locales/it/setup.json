@@ -1,0 +1,40 @@
+{
+  "setup": {
+    "topbarTitle": "Impostazioni",
+    "saved": "Salvato",
+    "backend": {
+      "ok": "Backend raggiungibile",
+      "fail": "Backend non raggiungibile — controlla che l'addon sia avviato"
+    },
+    "budget": {
+      "title": "Budget mensile per categoria"
+    },
+    "aiSync": {
+      "title": "AI",
+      "providerLabel": "Provider AI",
+      "infoLine1": "La chiave AI (OpenAI/Anthropic) si configura in <strong>Impostazioni → Add-on → CasaSpese → Configurazione</strong> in Home Assistant.",
+      "infoLine2": "Senza chiave AI configurata, la categorizzazione e l'import PDF provano comunque il task AI di Home Assistant, se presente."
+    },
+    "maintenance": {
+      "title": "Manutenzione",
+      "hint": "Se vedi persone o conti vuoti/duplicati nelle pagine Anagrafiche, usa questo pulsante per eliminarli.",
+      "cleaningInProgress": "Pulizia in corso...",
+      "cleanupButton": "Elimina voci vuote/corrotte",
+      "result": "Rimossi: {delPersons} persone, {delAccounts} conti. DB ora: {dbPersons} persone · {dbAccounts} conti · {dbTransactions} transazioni"
+    },
+    "backup": {
+      "title": "Backup (Excel)",
+      "hint1": "Esporta un file .xlsx con persone, conti, categorie, transazioni e budget (le credenziali IMAP non sono incluse).",
+      "hint2": "Ricaricando lo stesso file, le righe con un ID esistente vengono aggiornate, quelle nuove aggiunte — nessun dato viene sovrascritto per intero.",
+      "exportButton": "Esporta backup",
+      "importingInProgress": "Importazione in corso...",
+      "importButton": "Importa backup",
+      "rowStats": "{inserted} aggiunte, {updated} aggiornate",
+      "rowSkipped": "{skipped} scartate"
+    },
+    "errors": {
+      "apiError": "Errore API",
+      "backupImportError": "Errore import backup"
+    }
+  }
+}

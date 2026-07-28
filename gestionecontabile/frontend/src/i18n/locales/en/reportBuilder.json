@@ -1,0 +1,69 @@
+{
+  "reportBuilder": {
+    "savedReports": {
+      "title": "My reports",
+      "newReportOption": "— new report —",
+      "saveAsNew": "Save as new",
+      "updateReport": "Update \"{name}\"",
+      "deleteReportTitle": "Delete report"
+    },
+    "builder": {
+      "title": "Build report",
+      "groupBy": "Group by",
+      "splitBy": "Split by (optional)",
+      "noneOption": "— none —",
+      "metric": "Metric",
+      "visualization": "Visualization",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "type": "Type",
+      "allTypes": "All",
+      "expenseOnly": "Expenses only",
+      "incomeOnly": "Income only",
+      "confirmedOnly": "Confirmed only",
+      "account": "Account",
+      "allAccounts": "All accounts",
+      "category": "Category",
+      "allCategories": "All categories",
+      "person": "Person",
+      "allPersons": "All",
+      "destination": "Destination",
+      "allDestinations": "All",
+      "familyOnly": "Family",
+      "personalOnly": "Personal",
+      "splitOnly": "Split"
+    },
+    "metrics": {
+      "sum": "Total",
+      "count": "Number of transactions",
+      "avg": "Average",
+      "value": "Value"
+    },
+    "chartTypes": {
+      "table": "Table",
+      "bar": "Bar",
+      "pie": "Pie"
+    },
+    "dimensions": {
+      "category": "Category",
+      "account": "Account",
+      "person": "Person",
+      "destination": "Destination",
+      "month": "Month",
+      "day": "Day",
+      "merchant": "Merchant"
+    },
+    "result": {
+      "title": "Result",
+      "loading": "Loading...",
+      "noResultsForFilters": "No data for these filters"
+    },
+    "errors": {
+      "computeReport": "Error computing the report"
+    },
+    "prompts": {
+      "reportName": "Report name",
+      "confirmDelete": "Delete report \"{name}\"?"
+    }
+  }
+}

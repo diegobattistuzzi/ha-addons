@@ -1,0 +1,23 @@
+{
+  "emailReceipts": {
+    "title": "Email messages",
+    "empty": "No email receipts found. Start it from People → 📧 \"Import email history\".",
+    "infoBoxLine1": "Email receipts (PayPal, Amazon, ...) are automatically matched to a bank transaction with the same amount and a date within 5 days.",
+    "infoBoxLine2": "Those \"pending\" will be retried on the next statement import, or right away with the button below.",
+    "rematchButton": "🔁 Rematch emails",
+    "working": "...",
+    "sender": "Sender",
+    "subject": "Subject",
+    "receivedAt": "Received on",
+    "status": "Status",
+    "matchedTag": "✓ Matched (transaction #{id})",
+    "pendingTag": "✉ Pending",
+    "unmatchButton": "✕ Unlink",
+    "errorLoading": "Error loading",
+    "matchedCount": "✓ {count} receipts matched",
+    "noNewMatch": "No new matches found",
+    "errorRematch": "Error rematching",
+    "confirmUnmatch": "Unlink this receipt from transaction #{id}?",
+    "errorUnmatch": "Error unlinking the receipt"
+  }
+}

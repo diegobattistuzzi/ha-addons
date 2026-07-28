@@ -1,0 +1,34 @@
+{
+  "balance": {
+    "title": "Bilancio tra persone",
+    "period": {
+      "month": "Questo mese",
+      "all": "Tutto il periodo"
+    },
+    "loading": "Caricamento...",
+    "empty": {
+      "text": "Nessun dato — aggiungi persone e transazioni con {paidBy} compilato."
+    },
+    "debt": {
+      "owes": "deve",
+      "to": "a",
+      "balanced": "Bilancio in pari — nessun debito tra le persone."
+    },
+    "stats": {
+      "contributed": "Versamenti al comune",
+      "familySpent": "Quota spese comuni",
+      "personalSpent": "Spese personali",
+      "netBalance": "Saldo netto"
+    },
+    "note": {
+      "title": "Come funziona:",
+      "body": "Ogni entrata su un conto comune è considerata un versamento di chi ha pagato. Le spese famiglia sono divise equamente. Le spese personali sono interamente a carico di chi le ha fatte.",
+      "footerBefore": "Per un conteggio corretto compila sempre il campo",
+      "paidBy": "\"Pagato da\"",
+      "footerAfter": "nelle transazioni."
+    },
+    "errors": {
+      "loadFailed": "Errore caricamento"
+    }
+  }
+}

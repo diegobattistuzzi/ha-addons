@@ -1,0 +1,29 @@
+{
+  "common": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "close": "Chiudi",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "next": "Avanti",
+    "loading": "Caricamento...",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "actions": "Azioni",
+    "yes": "Sì",
+    "no": "No",
+    "total": "Totale",
+    "date": "Data",
+    "name": "Nome",
+    "type": "Tipo",
+    "amount": "Importo",
+    "description": "Descrizione",
+    "category": "Categoria",
+    "noResults": "Nessun risultato",
+    "error": "Si è verificato un errore",
+    "requiredField": "Campo obbligatorio"
+  }
+}

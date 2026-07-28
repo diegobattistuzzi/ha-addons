@@ -1,0 +1,12 @@
+{
+  "charts": {
+    "noData": "No data",
+    "trend": {
+      "noDataPeriod": "No data for this period",
+      "income": "Income",
+      "familyExpenses": "Family expenses",
+      "personalExpenses": "Personal expenses",
+      "month": "Month"
+    }
+  }
+}

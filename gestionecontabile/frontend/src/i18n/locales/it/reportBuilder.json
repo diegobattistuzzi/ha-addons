@@ -1,0 +1,69 @@
+{
+  "reportBuilder": {
+    "savedReports": {
+      "title": "I miei report",
+      "newReportOption": "— nuovo report —",
+      "saveAsNew": "Salva come nuovo",
+      "updateReport": "Aggiorna \"{name}\"",
+      "deleteReportTitle": "Elimina report"
+    },
+    "builder": {
+      "title": "Costruisci report",
+      "groupBy": "Raggruppa per",
+      "splitBy": "Spezza per (opzionale)",
+      "noneOption": "— nessuna —",
+      "metric": "Metrica",
+      "visualization": "Visualizzazione",
+      "dateFrom": "Dal",
+      "dateTo": "Al",
+      "type": "Tipo",
+      "allTypes": "Tutti",
+      "expenseOnly": "Solo spese",
+      "incomeOnly": "Solo entrate",
+      "confirmedOnly": "Solo confermate",
+      "account": "Conto",
+      "allAccounts": "Tutti i conti",
+      "category": "Categoria",
+      "allCategories": "Tutte le categorie",
+      "person": "Persona",
+      "allPersons": "Tutte",
+      "destination": "Destinazione",
+      "allDestinations": "Tutte",
+      "familyOnly": "Famiglia",
+      "personalOnly": "Personale",
+      "splitOnly": "Split"
+    },
+    "metrics": {
+      "sum": "Totale",
+      "count": "Numero movimenti",
+      "avg": "Media",
+      "value": "Valore"
+    },
+    "chartTypes": {
+      "table": "Tabella",
+      "bar": "Barre",
+      "pie": "Torta"
+    },
+    "dimensions": {
+      "category": "Categoria",
+      "account": "Conto",
+      "person": "Persona",
+      "destination": "Destinazione",
+      "month": "Mese",
+      "day": "Giorno",
+      "merchant": "Esercente"
+    },
+    "result": {
+      "title": "Risultato",
+      "loading": "Caricamento...",
+      "noResultsForFilters": "Nessun dato per questi filtri"
+    },
+    "errors": {
+      "computeReport": "Errore nel calcolo del report"
+    },
+    "prompts": {
+      "reportName": "Nome del report",
+      "confirmDelete": "Eliminare il report \"{name}\"?"
+    }
+  }
+}

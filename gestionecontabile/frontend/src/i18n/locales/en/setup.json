@@ -1,0 +1,40 @@
+{
+  "setup": {
+    "topbarTitle": "Settings",
+    "saved": "Saved",
+    "backend": {
+      "ok": "Backend reachable",
+      "fail": "Backend not reachable — check that the add-on is running"
+    },
+    "budget": {
+      "title": "Monthly budget per category"
+    },
+    "aiSync": {
+      "title": "AI",
+      "providerLabel": "AI Provider",
+      "infoLine1": "The AI key (OpenAI/Anthropic) is configured in <strong>Settings → Add-on → CasaSpese → Configuration</strong> in Home Assistant.",
+      "infoLine2": "Without an AI key configured, categorization and PDF import still try the Home Assistant AI task, if available."
+    },
+    "maintenance": {
+      "title": "Maintenance",
+      "hint": "If you see empty or duplicate people or accounts in the Registry pages, use this button to remove them.",
+      "cleaningInProgress": "Cleaning in progress...",
+      "cleanupButton": "Delete empty/corrupted entries",
+      "result": "Removed: {delPersons} people, {delAccounts} accounts. DB now: {dbPersons} people · {dbAccounts} accounts · {dbTransactions} transactions"
+    },
+    "backup": {
+      "title": "Backup (Excel)",
+      "hint1": "Export an .xlsx file with people, accounts, categories, transactions and budgets (IMAP credentials are not included).",
+      "hint2": "Reloading the same file updates rows with an existing ID and adds new ones — no data is entirely overwritten.",
+      "exportButton": "Export backup",
+      "importingInProgress": "Import in progress...",
+      "importButton": "Import backup",
+      "rowStats": "{inserted} added, {updated} updated",
+      "rowSkipped": "{skipped} skipped"
+    },
+    "errors": {
+      "apiError": "API error",
+      "backupImportError": "Backup import error"
+    }
+  }
+}

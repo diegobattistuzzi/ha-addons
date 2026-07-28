@@ -1,0 +1,41 @@
+{
+  "mobile": {
+    "scan": {
+      "title": "Scan receipt",
+      "greeting": "Hi {name}",
+      "takePhoto": "Tap to photograph the receipt",
+      "or": "or",
+      "voiceButton": "🎤 Tell me the expense",
+      "voiceListening": "Listening... tap to stop",
+      "voiceNotSupported": "Speech recognition not available on this browser",
+      "voiceNoSpeech": "I didn't hear anything, try again",
+      "voiceError": "Speech recognition error",
+      "analyzing": "Reading receipt...",
+      "amountLabel": "Amount (€)",
+      "merchantLabel": "Merchant",
+      "dateLabel": "Date",
+      "categoryLabel": "Category",
+      "categoryNone": "No category",
+      "accountLabel": "Cash or account",
+      "accountPlaceholder": "Choose...",
+      "saving": "Saving...",
+      "save": "Save expense",
+      "saved": "✓ Expense saved",
+      "contextError": "Could not recognize the user. The link may have expired or been revoked.",
+      "parseError": "Couldn't read the receipt: please fill in the fields manually.",
+      "saveError": "Error saving the expense",
+      "defaultDescription": "Receipt"
+    },
+    "transactions": {
+      "title": "Transactions",
+      "empty": "No transactions this month.",
+      "noDescription": "(no description)",
+      "loadError": "Error loading transactions",
+      "editTitle": "Edit expense",
+      "saveError": "Error saving",
+      "deleteTitle": "Delete",
+      "deleteConfirm": "Delete this transaction?",
+      "deleteError": "Error deleting"
+    }
+  }
+}

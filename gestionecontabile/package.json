@@ -1,0 +1,13 @@
+{
+  "name": "Spese di casa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"python -m uvicorn backend.server:app --reload --port 8099\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend",
+    "install:all": "python -m pip install -r backend/requirements.txt && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

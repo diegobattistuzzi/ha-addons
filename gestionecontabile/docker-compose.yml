@@ -1,0 +1,13 @@
+services:
+  casaspese:
+    build: .
+    ports:
+      - "8099:8099"
+    volumes:
+      - ./data:/data
+    environment:
+      - DATA_DIR=/data
+      - NODE_ENV=development
+    # Sviluppo locale: crea data/options.json con le tue API key
+    # In produzione HA le scrive automaticamente da config.yaml
+    restart: unless-stopped

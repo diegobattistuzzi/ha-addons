@@ -1,0 +1,41 @@
+{
+  "mobile": {
+    "scan": {
+      "title": "Scansiona scontrino",
+      "greeting": "Ciao {name}",
+      "takePhoto": "Tocca per fotografare lo scontrino",
+      "or": "oppure",
+      "voiceButton": "🎤 Racconta la spesa a voce",
+      "voiceListening": "In ascolto... tocca per fermare",
+      "voiceNotSupported": "Riconoscimento vocale non disponibile su questo browser",
+      "voiceNoSpeech": "Non ho sentito nulla, riprova",
+      "voiceError": "Errore nel riconoscimento vocale",
+      "analyzing": "Lettura scontrino in corso...",
+      "amountLabel": "Importo (€)",
+      "merchantLabel": "Esercente",
+      "dateLabel": "Data",
+      "categoryLabel": "Categoria",
+      "categoryNone": "Nessuna categoria",
+      "accountLabel": "Contanti o conto",
+      "accountPlaceholder": "Scegli...",
+      "saving": "Salvataggio...",
+      "save": "Salva spesa",
+      "saved": "✓ Spesa salvata",
+      "contextError": "Impossibile riconoscere l'utente. Il link potrebbe essere scaduto o revocato.",
+      "parseError": "Non sono riuscito a leggere lo scontrino: compila i campi a mano.",
+      "saveError": "Errore nel salvataggio della spesa",
+      "defaultDescription": "Scontrino"
+    },
+    "transactions": {
+      "title": "Transazioni",
+      "empty": "Nessuna transazione questo mese.",
+      "noDescription": "(senza descrizione)",
+      "loadError": "Errore nel caricamento delle transazioni",
+      "editTitle": "Modifica spesa",
+      "saveError": "Errore nel salvataggio",
+      "deleteTitle": "Elimina",
+      "deleteConfirm": "Eliminare questa transazione?",
+      "deleteError": "Errore nell'eliminazione"
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "transactions": {
+    "topbar": {
+      "title": "Transazioni",
+      "count": "{count} movimenti"
+    },
+    "actions": {
+      "manualAdd": "+ Inserisci",
+      "importBank": "↑ Importa estratto"
+    },
+    "aiQuickAdd": {
+      "placeholder": "✨ Es: 23€ pizza ieri sera con amex",
+      "analyze": "Analizza"
+    },
+    "aiBanner": {
+      "text": "transazioni da confermare (categorizzate da AI)",
+      "show": "Mostra",
+      "approveAll": "✓ Approva tutte"
+    },
+    "reimbBanner": {
+      "text": "da richiedere a rimborso al lavoro",
+      "show": "Mostra"
+    },
+    "filters": {
+      "search": "Cerca...",
+      "allAccounts": "Tutti i conti",
+      "allCategories": "Tutte le categorie",
+      "all": "Tutti",
+      "personalAll": "Personale (tutti)",
+      "personalOf": "Personale - {name}",
+      "reimbAll": "Rimborso: tutti",
+      "reimbPending": "Da rimborsare",
+      "reimbReimbursed": "Già rimborsate",
+      "statusAll": "Stato: tutti",
+      "statusPending": "Da confermare",
+      "statusConfirmed": "Confermate",
+      "filterBtn": "Filtra"
+    },
+    "destination": {
+      "family": "Famiglia",
+      "personal": "Personale",
+      "split": "Split"
+    },
+    "bulkBar": {
+      "selectedCount": "{count} selezionate",
+      "categoryNoChange": "Categoria: non cambiare",
+      "accountNoChange": "Conto: non cambiare",
+      "destNoChange": "Destinazione: non cambiare",
+      "paidByNoChange": "Pagato da: non cambiare",
+      "clearOption": "— svuota —",
+      "reimbNoChange": "Rimborso: non cambiare",
+      "markReimbursable": "Segna \"da rimborsare\"",
+      "apply": "Applica",
+      "confirm": "✓ Conferma",
+      "rejectAi": "✕ Rifiuta suggerimento AI",
+      "categorizeAi": "✦ Riconosci categoria (AI)",
+      "delete": "🗑 Elimina",
+      "deselect": "Deseleziona"
+    },
+    "list": {
+      "header": {
+        "transaction": "Transazione",
+        "dest": "Dest.",
+        "from": "Da",
+        "account": "Conto"
+      },
+      "checkBackend": "Controlla che il backend sia avviato e premi F5 per riprovare.",
+      "empty": "Nessuna transazione.",
+      "emptyHint": "Inserisci manualmente o importa un estratto conto."
+    },
+    "row": {
+      "openSourceStatement": "Apri estratto conto di origine",
+      "attachmentsTitle": "{count} allegato/i",
+      "goToMatchedEmail": "Vai alla mail abbinata",
+      "clickToChangeCategory": "Clicca per cambiare categoria",
+      "confirmAiCategory": "Conferma la categoria proposta dall'AI così com'è",
+      "clickToChangeDest": "Clicca per cambiare destinazione",
+      "reimbursedOn": "Rimborsata il {date}",
+      "toReimburse": "Da rimborsare dal lavoro: {amount}",
+      "reimbDoneBadge": "✓ rimb.",
+      "reopenTitle": "Riapri (non ancora rimborsata)",
+      "markReimbursedTitle": "Segna come rimborsata"
+    },
+    "manualModal": {
+      "editTitle": "Modifica transazione",
+      "newTitle": "Nuova transazione",
+      "dateLabel": "Data *",
+      "amountLabel": "Importo * (negativo = spesa)",
+      "descriptionLabel": "Descrizione *",
+      "descriptionPlaceholder": "es. Supermercato Esselunga",
+      "accountLabel": "Conto *",
+      "selectPlaceholder": "— seleziona —",
+      "destinationLabel": "Destinazione",
+      "destFamily": "Famiglia (quota a testa)",
+      "destSplit": "Split (con una persona)",
+      "paidByLabel": "Pagato da",
+      "notSpecified": "— non specificato —",
+      "splitWithLabel": "Dividi con",
+      "choosePerson": "— scegli persona —",
+      "splitPercentLabel": "Quota di chi ha pagato (%)",
+      "cashLabel": "Contanti",
+      "reimbursableLabel": "Da rimborsare (lavoro)",
+      "reimbAmountLabel": "Importo richiesto a rimborso",
+      "notesLabel": "Note",
+      "notesPlaceholder": "Note aggiuntive",
+      "attachmentsLabel": "Allegati (scontrini, fatture, ricevute...)",
+      "removeAttachmentTitle": "Rimuovi allegato",
+      "uploading": "Caricamento...",
+      "addAttachment": "+ Aggiungi allegato",
+      "saveChanges": "Salva modifiche"
+    },
+    "importModal": {
+      "title": "Importa estratto conto",
+      "csvDesc": "Tutti i formati bancari italiani",
+      "excelDesc": "Fogli di calcolo",
+      "pdfDesc": "Richiede un task AI configurato in Home Assistant",
+      "linkAccountLabel": "Associa le transazioni al conto (opzionale)",
+      "autoDetect": "— rileva automaticamente dal file —",
+      "personalAccountHint": "Conto personale: le transazioni verranno importate come spese personali, visibili solo a {name}.",
+      "thisOwner": "questo intestatario",
+      "dragText": "Trascina qui il file o",
+      "dragLink": "clicca per scegliere",
+      "dragHint": "CSV, Excel (.xlsx), PDF — max 50 MB",
+      "analyzing": "Analisi in corso...",
+      "aiReadingPdf": "L'AI sta leggendo il PDF",
+      "foundCount": "{count} transazioni trovate finora",
+      "detectedBank": "Rilevato: {bank}",
+      "unknownBank": "banca non riconosciuta",
+      "ibanLabel": "IBAN {iban}",
+      "cardLabel": "carta ...{card}",
+      "importError": "Errore importazione",
+      "importedCount": "{count} transazioni importate",
+      "fromFile": "da {filename}",
+      "aiAnalyzed": "analizzato con AI",
+      "aiCategorizedCount": "{count} categorizzate automaticamente, da confermare",
+      "duplicatesIgnored": "{count} transazioni ignorate perché già importate in precedenza",
+      "previewHeader": "Anteprima prime transazioni:",
+      "importedAsUnconfirmed": "Le transazioni sono state importate come non confermate. Puoi approvarle tutte dal banner in cima, oppure modificarle singolarmente.",
+      "transferSuggestionsHeader": "Possibili pagamenti carta di credito rilevati:",
+      "suggestionMatch": "{date} · corrisponde alle spese di \"{cardAccountName}\" ({matchedAmount})",
+      "markedTransfer": "✓ Segnato",
+      "markAsTransferBtn": "Segna come Trasferimento"
+    },
+    "confirms": {
+      "bulkDelete": "Eliminare definitivamente {count} transazioni selezionate?",
+      "removeAttachment": "Rimuovere l'allegato \"{filename}\"?",
+      "deleteTx": "Eliminare \"{name}\"?"
+    },
+    "errors": {
+      "loadFailed": "Errore caricamento transazioni",
+      "applyBulkFailed": "Errore applicazione modifiche",
+      "confirmFailed": "Errore conferma",
+      "rejectAiFailed": "Errore rifiuto suggerimento AI",
+      "categorizeAiFailed": "Errore riconoscimento categoria AI",
+      "noCategorySuggested": "Nessuna categoria suggerita: le transazioni selezionate hanno già una categoria o un suggerimento in attesa di conferma.",
+      "deleteFailed": "Errore eliminazione",
+      "aiParseFailed": "Errore analisi AI",
+      "uploadAttachmentFailed": "Errore caricamento allegato",
+      "removeAttachmentFailed": "Errore rimozione allegato",
+      "requiredFields": "Compila i campi obbligatori (data, importo, descrizione, conto)",
+      "chooseSplitPerson": "Scegli con chi dividere la spesa",
+      "saveFailed": "Errore salvataggio",
+      "toggleReimbursedFailed": "Errore aggiornamento stato rimborso",
+      "updateCategoryFailed": "Errore aggiornamento categoria",
+      "updateDestFailed": "Errore aggiornamento destinazione",
+      "confirmCategoryFailed": "Errore conferma categoria",
+      "importFailed": "Errore importazione",
+      "httpError": "Errore HTTP {status}",
+      "transferCategoryNotFound": "Categoria \"Trasferimenti\" non trovata",
+      "transferFailed": "Errore"
+    }
+  }
+}

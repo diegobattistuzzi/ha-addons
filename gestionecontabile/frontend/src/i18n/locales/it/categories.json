@@ -1,0 +1,49 @@
+{
+  "categories": {
+    "title": "Categorie di spesa",
+    "tabs": {
+      "expense": "Spese",
+      "income": "Entrate",
+      "transfer": "Trasferimenti"
+    },
+    "emptyState": "Nessuna categoria di tipo \"{type}\".",
+    "headers": {
+      "code": "Codice",
+      "icon": "Icona",
+      "monthlyBudget": "Budget mensile",
+      "annualBudget": "Budget annuale",
+      "aiKeywords": "Parole chiave AI"
+    },
+    "perMonth": "{amount}/mese",
+    "perYear": "{amount}/anno",
+    "deactivateTitle": "Disattiva (non piu' proposta nei menu, ma resta nello storico)",
+    "reactivateTitle": "Riattiva",
+    "deleteTitle": "Elimina definitivamente",
+    "editTitle": "Modifica categoria",
+    "newTitle": "Nuova categoria",
+    "form": {
+      "codeLabel": "Codice (es. SA, T1, RIMB)",
+      "codePlaceholder": "SA",
+      "iconLabel": "Icona (emoji)",
+      "nameLabel": "Nome *",
+      "namePlaceholder": "es. Spese alimentari",
+      "monthlyBudgetLabel": "Budget mensile (€)",
+      "annualBudgetLabel": "Budget annuale (€)",
+      "annualBudgetHint": "Facoltativo. Utile per spese poco frequenti (es. tasse, ferie) dove il limite mensile non ha senso.",
+      "parentLabel": "Categoria padre",
+      "noParentOption": "— nessuna (categoria di primo livello) —",
+      "hasChildrenHint": "Questa categoria ha gia' delle sotto-categorie: non puo' avere a sua volta un genitore.",
+      "aiKeywordsLabel": "Parole chiave per AI (separate da virgola)",
+      "aiKeywordsPlaceholder": "supermercato, esselunga, carrefour",
+      "aiKeywordsHint": "L'AI usa queste parole per riconoscere automaticamente la categoria."
+    },
+    "typeOptions": {
+      "expense": "Spesa",
+      "income": "Entrata",
+      "transfer": "Trasferimento"
+    },
+    "nameRequired": "Il nome è obbligatorio",
+    "deleteConfirm": "Eliminare definitivamente \"{name}\"? Le transazioni gia' assegnate a questa categoria resteranno senza categoria.",
+    "deleteError": "Errore eliminazione"
+  }
+}
