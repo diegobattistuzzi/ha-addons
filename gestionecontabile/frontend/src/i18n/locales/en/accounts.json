@@ -17,6 +17,8 @@
       "ownership": "Ownership",
       "owner": "Owner *",
       "choosePerson": "Choose the person",
+      "coOwners": "Also visible to",
+      "coOwnersHint": "Selected people see this account and its transactions as if it were theirs, in addition to the owner.",
       "settlementAccount": "Settlement account",
       "none": "— none —",
       "settlementHint": "The checking account the monthly summary charge is billed to. Used to recognize and avoid double counting when you import that account's statement.",
@@ -24,7 +26,12 @@
       "cardNumberPlaceholder": "e.g. 7100 (last digits, can be masked)",
       "cardNumberHint": "Helps the AI automatically recognize the account when you import a statement for this card.",
       "iban": "IBAN (optional)",
-      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000"
+      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000",
+      "amountSignMode": "Amount sign in the statement",
+      "amountSignModeHint": "How to interpret the sign of amounts when you import a file for this card. Leave \"Automatic\" unless the import flips expenses and credits.",
+      "amountSignModeAuto": "Automatic (detect from the file's text)",
+      "amountSignModeFlip": "Expenses always positive in the file (needs flipping)",
+      "amountSignModeSigned": "Already correctly signed (expenses negative, like American Express)"
     },
     "openingBalance": {
       "buttonTitle": "Set opening balance",

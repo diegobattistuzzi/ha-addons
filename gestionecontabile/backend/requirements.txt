@@ -5,3 +5,4 @@ openpyxl
 python-dateutil
 httpx
 pypdf
+mcp==1.9.4

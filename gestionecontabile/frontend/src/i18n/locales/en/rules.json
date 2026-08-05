@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "title": "Recognition rules",
+    "addButton": "New rule",
+    "empty": "No rules configured.",
+    "hint": "Rules are evaluated before category keywords and AI, in priority order (highest first): the first one matching the description (and the sign, if set) assigns the category and, if chosen, destination/person, and immediately confirms the transaction.",
+    "activate": "Activate rule",
+    "deactivate": "Deactivate rule",
+    "confirmDelete": "Delete rule \"{pattern}\"?",
+    "modal": {
+      "addTitle": "New rule",
+      "editTitle": "Edit rule"
+    },
+    "form": {
+      "pattern": "Pattern (search in description)",
+      "patternPlaceholder": "e.g. amazon, gas station...",
+      "isRegex": "Regular expression",
+      "isRegexHint": "If off, the pattern just needs to be contained in the description (case-insensitive). If on, it's treated as a regex.",
+      "sign": "Amount sign",
+      "signAny": "Any",
+      "signNegative": "Expenses only",
+      "signPositive": "Income only",
+      "destination": "Destination",
+      "destinationUnchanged": "— leave unchanged —",
+      "paidBy": "Person",
+      "paidByUnchanged": "— leave unchanged —",
+      "priority": "Priority",
+      "priorityHint": "On equal match, the rule with the highest priority wins.",
+      "isActive": "Rule active"
+    },
+    "errors": {
+      "patternRequired": "Pattern is required",
+      "categoryRequired": "Category is required",
+      "loadFailed": "Loading error",
+      "saveFailed": "Save error"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "assistant": {
+    "title": "AI Assistant",
+    "tabs": {
+      "summary": "Summary",
+      "chat": "Chat"
+    },
+    "summary": {
+      "title": "Monthly summary",
+      "generate": "Generate analysis",
+      "generating": "Generating…",
+      "empty": "Press \"Generate analysis\" to get an AI-written summary of the selected month."
+    },
+    "anomalies": {
+      "title": "Anomalies",
+      "empty": "Press \"Generate analysis\" to check for unusual spending in the selected month.",
+      "none": "No anomalies detected for this month.",
+      "categorySpike": "Unusually high spending in category {category}.",
+      "newMerchant": "New merchant not seen recently: {merchant}."
+    },
+    "chat": {
+      "newConversation": "New conversation",
+      "noConversations": "No saved conversations.",
+      "empty": "Ask a question about your finances, e.g. \"How much did I spend on restaurants this month?\"",
+      "placeholder": "Type a question…",
+      "send": "Send",
+      "thinking": "Thinking…",
+      "chartPreview": "Question chart",
+      "saveAsReport": "Save as report",
+      "savedConfirmation": "Report saved: you'll also find it under Reports > Custom.",
+      "confirmDelete": "Delete this conversation?"
+    },
+    "errors": {
+      "generic": "Something went wrong. Make sure the AI is configured correctly and try again."
+    }
+  }
+}

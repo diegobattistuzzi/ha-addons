@@ -54,6 +54,24 @@
         </div>
       </div>
 
+      <!-- PRIVACY -->
+      <div class="section">
+        <div class="section-header"><h2>{{ t('setup.privacy.title') }}</h2></div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label class="label">{{ t('setup.privacy.levelLabel') }}</label>
+            <select class="input" v-model="settings.visibilityLevel" @change="saveSettings">
+              <option value="segregated">{{ t('setup.privacy.levels.segregated') }}</option>
+              <option value="accounts_only">{{ t('setup.privacy.levels.accountsOnly') }}</option>
+              <option value="open">{{ t('setup.privacy.levels.open') }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="info-box">
+          ℹ {{ t('setup.privacy.hint') }}
+        </div>
+      </div>
+
       <!-- MANUTENZIONE -->
       <div class="section">
         <div class="section-header"><h2>{{ t('setup.maintenance.title') }}</h2></div>
@@ -111,7 +129,7 @@ const { t } = useI18n()
 
 const expenseCategories = ref([])
 const budgetMap = ref({})
-const settings  = ref({ aiProvider: 'openai' })
+const settings  = ref({ aiProvider: 'openai', visibilityLevel: 'segregated' })
 const backendOk = ref(false)
 const apiBase   = ref('')
 const saved     = ref(false)
@@ -144,6 +162,7 @@ async function saveBudget(catId) {
 async function saveSettings() {
   await call(() => api.post('api/setup/complete', {
     aiProvider: settings.value.aiProvider,
+    visibilityLevel: settings.value.visibilityLevel,
   }))
   showSaved()
 }
@@ -206,6 +225,9 @@ onMounted(async () => {
   const cats = cRes?.data || []
   expenseCategories.value = cats.filter(c => c.type === 'expense')
   expenseCategories.value.forEach(c => { budgetMap.value[c.id] = c.budget_monthly || '' })
+
+  const sRes = await call(() => api.get('api/settings'))
+  if (sRes?.data) settings.value = { ...settings.value, ...sRes.data }
 })
 </script>
 

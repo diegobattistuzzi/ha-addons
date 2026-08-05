@@ -89,6 +89,16 @@
               <option v-for="p in persons" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
           </div>
+          <div v-if="form.ownership === 'personal' && coOwnerCandidates.length" class="form-group">
+            <label class="label">{{ t('accounts.form.coOwners') }}</label>
+            <div class="co-owners-list">
+              <label v-for="p in coOwnerCandidates" :key="p.id" class="co-owner-item">
+                <input type="checkbox" :value="p.id" v-model="form.coOwners" />
+                {{ p.name }}
+              </label>
+            </div>
+            <div class="field-hint">{{ t('accounts.form.coOwnersHint') }}</div>
+          </div>
           <div v-if="form.type === 'credit_card'" class="form-group">
             <label class="label">{{ t('accounts.form.settlementAccount') }}</label>
             <select class="input" v-model="form.settlementAccountId">
@@ -101,6 +111,15 @@
             <label class="label">{{ t('accounts.form.cardNumber') }}</label>
             <input class="input" v-model="form.cardNumber" :placeholder="t('accounts.form.cardNumberPlaceholder')" />
             <div class="field-hint">{{ t('accounts.form.cardNumberHint') }}</div>
+          </div>
+          <div v-if="form.type === 'credit_card'" class="form-group">
+            <label class="label">{{ t('accounts.form.amountSignMode') }}</label>
+            <select class="input" v-model="form.amountSignMode">
+              <option value="auto">{{ t('accounts.form.amountSignModeAuto') }}</option>
+              <option value="flip">{{ t('accounts.form.amountSignModeFlip') }}</option>
+              <option value="signed">{{ t('accounts.form.amountSignModeSigned') }}</option>
+            </select>
+            <div class="field-hint">{{ t('accounts.form.amountSignModeHint') }}</div>
           </div>
           <div class="form-group">
             <label class="label">{{ t('accounts.form.iban') }}</label>
@@ -194,8 +213,12 @@ const personName  = id => persons.value.find(p => p.id === id)?.name || '—'
 const accountName = id => accounts.value.find(a => a.id === id)?.name || '—'
 const fmt = v => new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' }).format(v)
 
-const emptyForm = () => ({ name:'', bank:'other', type:'checking', ownership:'shared', ownerId:'', settlementAccountId:'', iban:'' })
+const emptyForm = () => ({ name:'', bank:'other', type:'checking', ownership:'shared', ownerId:'', coOwners:[], settlementAccountId:'', iban:'', amountSignMode:'auto' })
 const form = ref(emptyForm())
+
+// Chi puo' essere aggiunto come co-titolare di un conto personale: tutti
+// tranne il proprietario stesso (che vede il conto comunque).
+const coOwnerCandidates = computed(() => persons.value.filter(p => p.id !== form.value.ownerId))
 
 const showBalanceModal   = ref(false)
 const balanceAccount     = ref(null)
@@ -234,7 +257,9 @@ function openAdd() {
 }
 
 function openEdit(a) {
-  form.value = { name:a.name, bank:a.bank||'other', type:a.type||'checking', ownership:a.ownership||'shared', ownerId:a.owner_id||'', settlementAccountId:a.settlement_account_id||'', iban:a.iban||'' }
+  let coOwners = []
+  try { coOwners = a.co_owners ? JSON.parse(a.co_owners) : [] } catch { coOwners = [] }
+  form.value = { name:a.name, bank:a.bank||'other', type:a.type||'checking', ownership:a.ownership||'shared', ownerId:a.owner_id||'', coOwners, settlementAccountId:a.settlement_account_id||'', iban:a.iban||'', cardNumber:a.card_number||'', amountSignMode:a.amount_sign_mode||'auto' }
   editId.value = a.id
   formError.value = ''
   showModal.value = true
@@ -292,7 +317,9 @@ async function save() {
     const payload = {
       ...form.value,
       ownerId: form.value.ownership === 'personal' ? form.value.ownerId : null,
+      coOwners: form.value.ownership === 'personal' ? form.value.coOwners : null,
       settlementAccountId: form.value.type === 'credit_card' ? (form.value.settlementAccountId || null) : null,
+      amountSignMode: form.value.type === 'credit_card' ? form.value.amountSignMode : 'auto',
     }
     if (editId.value) {
       await api.put(`api/accounts/${editId.value}`, payload)
@@ -365,6 +392,8 @@ onMounted(load)
 .input:focus { border-color:#1D3557; background:#fff; }
 .form-error { font-size:12px; color:#E76F51; }
 .field-hint { font-size:11px; color:#9A938C; line-height:1.4; }
+.co-owners-list { display:flex; flex-direction:column; gap:6px; }
+.co-owner-item { display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
 .checkpoint-list { display:flex; flex-direction:column; gap:2px; }
 .checkpoint-row { display:flex; align-items:center; gap:10px; font-size:13px; padding:6px 0; border-bottom:1px solid #F0EEE9; }
 .checkpoint-date { flex:1; }

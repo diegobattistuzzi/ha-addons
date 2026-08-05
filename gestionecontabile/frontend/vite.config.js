@@ -1,8 +1,16 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json' with { type: 'json' }
 
 export default defineConfig({
+  // Espone la versione di package.json in App.vue (footer sidebar) come
+  // __APP_VERSION__: va tenuta allineata a config.yaml (versione dell'add-on
+  // HA) ad ogni release, cosi' un domani un disallineamento si vede subito
+  // nell'app invece di scoprirlo per caso confrontando due file a mano.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     vue(),
     // Rende l'app installabile da cellulare (schermata Home) per l'accesso
@@ -19,6 +27,21 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        // opencv.js/jscanify (public/vendor) pesano ~8MB e servono solo alla
+        // schermata di scansione scontrini: esclusi dal precache (altrimenti
+        // finirebbero scaricati eagerly all'installazione della PWA) e messi
+        // in cache runtime solo alla prima richiesta effettiva.
+        globIgnores: ['vendor/**'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/vendor\/(opencv|jscanify)\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'receipt-scanner-vendor',
+              expiration: { maxEntries: 2 },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'Spese di casa',

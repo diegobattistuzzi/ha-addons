@@ -678,12 +678,15 @@ def _ensure_second_date_column_skipped(pattern: str) -> str:
     sballando importo e descrizione. Inseriamo un salto opzionale di
     un'eventuale seconda data subito prima di (?P<amount>...): se la seconda
     data non c'e' (formati a data singola) il gruppo e' opzionale e non
-    cambia nulla, se c'e' viene consumata cosi' l'importo resta quello vero."""
+    cambia nulla, se c'e' viene consumata cosi' l'importo resta quello vero.
+    Il gruppo e' nominato (?P<value_date>...) invece di non-capturing: quando
+    presente e' la vera data valuta della transazione, salvata a parte per
+    migliorare il riconoscimento dei doppioni (vedi _finalize_import)."""
     marker = '(?P<amount>'
     idx = pattern.find(marker)
     if idx == -1:
         return pattern
-    skip = r'(?:\s*\d{1,4}[-./]\d{1,2}[-./]\d{1,4}\s*)?'
+    skip = r'(?:\s*(?P<value_date>\d{1,4}[-./]\d{1,2}[-./]\d{1,4})\s*)?'
     return pattern[:idx] + skip + pattern[idx:]
 
 
@@ -826,8 +829,10 @@ def _find_card_settlement_row(full_text: str) -> Optional[Dict[str, Any]]:
     amount = _parse_amount(match.group('amount'))
     if date_iso is None or amount is None:
         return None
+    value_date_iso = _parse_date(match.group('valuta'), None) if match.group('valuta') else None
     return {
         'date': date_iso,
+        'value_date': value_date_iso if value_date_iso != date_iso else None,
         'amount': abs(amount),
         'description': 'Addebito in C/C (pagamento saldo carta di credito)',
         'isCardSettlement': True,
@@ -882,6 +887,7 @@ def extract_transactions_with_recipe(
     for m in compiled.finditer(full_text):
         groups = m.groupdict()
         date_iso = _parse_date(groups.get('date') or '', date_format)
+        value_date_iso = _parse_date(groups.get('value_date') or '', date_format) if groups.get('value_date') else None
         amount_text = groups.get('amount') or ''
         canonical_match = _CANONICAL_AMOUNT_RE.match(full_text, pos=m.start('amount'))
         if canonical_match and len(canonical_match.group(0)) > len(amount_text):
@@ -907,7 +913,7 @@ def extract_transactions_with_recipe(
                 pos_dist = abs(offset - header_offsets['positive'])
                 column_side = 'negative' if neg_dist <= pos_dist else 'positive'
         raw_rows.append({
-            'date': date_iso, 'amount': amount, 'description': description,
+            'date': date_iso, 'value_date': value_date_iso, 'amount': amount, 'description': description,
             'gap_len': gap_len, 'column_side': column_side,
         })
 
@@ -934,13 +940,16 @@ def extract_transactions_with_recipe(
             # _BUILTIN_NEGATIVE_KEYWORDS), che e' il segno sbagliato per
             # questa riga. Va importata (non scartata) e marcata come
             # trasferimento: vedi is_card_settlement in _finalize_import.
-            row = {'date': r['date'], 'amount': abs(r['amount']), 'description': r['description'], 'isCardSettlement': True}
+            row = {
+                'date': r['date'], 'value_date': r['value_date'], 'amount': abs(r['amount']),
+                'description': r['description'], 'isCardSettlement': True,
+            }
         else:
             amount = _resolve_sign(
                 r['amount'], r['description'], sign_mode, sign_keywords,
                 r['gap_len'], gap_threshold, r['column_side'], default_negative,
             )
-            row = {'date': r['date'], 'amount': amount, 'description': r['description']}
+            row = {'date': r['date'], 'value_date': r['value_date'], 'amount': amount, 'description': r['description']}
         rows.append(row)
 
     if default_negative and not any(r.get('isCardSettlement') for r in rows):

@@ -34,8 +34,6 @@ AI_PROVIDER = _option('ai_provider', 'AI_PROVIDER', 'openai')
 AI_MODEL = _option('ai_model', 'AI_MODEL', 'gpt-4o-mini')
 OPENAI_API_KEY = _option('openai_api_key', 'OPENAI_API_KEY', '')
 ANTHROPIC_API_KEY = _option('anthropic_api_key', 'ANTHROPIC_API_KEY', '')
-NORDIGEN_SECRET_ID = _option('nordigen_secret_id', 'NORDIGEN_SECRET_ID', '')
-NORDIGEN_SECRET_KEY = _option('nordigen_secret_key', 'NORDIGEN_SECRET_KEY', '')
 HA_TOKEN = _option('ha_token', 'HA_TOKEN', '')
 
 # URL pubblico (https, dietro il reverse proxy nginx) usato solo per comporre
@@ -50,3 +48,13 @@ try:
     SYNC_INTERVAL_MINUTES = int(_option('sync_interval_minutes', 'SYNC_INTERVAL_MINUTES', '30'))
 except (TypeError, ValueError):
     SYNC_INTERVAL_MINUTES = 30
+
+# Notifiche verso Home Assistant (via Supervisor API, vedi ha_notifier.py):
+# solo default di bootstrap, l'utente puo' sovrascriverli da Impostazioni
+# (tabella settings, stesso schema di sync_interval_minutes) senza riavviare.
+HA_NOTIFY_ENABLED = str(_option('ha_notify_enabled', 'HA_NOTIFY_ENABLED', 'false')).lower() in ('1', 'true', 'yes')
+HA_NOTIFY_SERVICE = _option('ha_notify_service', 'HA_NOTIFY_SERVICE', '')
+try:
+    HA_NOTIFY_INTERVAL_MINUTES = int(_option('ha_notify_interval_minutes', 'HA_NOTIFY_INTERVAL_MINUTES', '15'))
+except (TypeError, ValueError):
+    HA_NOTIFY_INTERVAL_MINUTES = 15

@@ -41,4 +41,29 @@ api.interceptors.request.use(config => {
   return config
 })
 
+// Un <a href="api/documents/123/download"> naviga fuori da axios, quindi non
+// porta ne' l'header Authorization (token mobile PWA) ne' X-Person-Id: il
+// backend risponde 401 (vedi enforce_public_gateway_auth in server.py) a
+// chiunque non abbia anche l'header x-ingress-path genuino di HA. Passando
+// dall'istanza axios sopra il download riceve gli stessi header di ogni altra
+// chiamata API; il file arriva come blob e viene "scaricato" creando un <a>
+// temporaneo con URL.createObjectURL, senza mai esporre un link diretto.
+export async function downloadFile(path, filename) {
+  const res = await api.get(path, { responseType: 'blob' })
+  let name = filename
+  const disposition = res.headers['content-disposition']
+  if (!name && disposition) {
+    const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)
+    if (match) name = decodeURIComponent(match[1])
+  }
+  const blobUrl = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = name || 'download'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(blobUrl)
+}
+
 export default api

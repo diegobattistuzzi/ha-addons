@@ -55,6 +55,13 @@
               <option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.type === 'cash' ? '💵 ' : '' }}{{ a.name }}</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="label">{{ t('mobile.scan.destinationLabel') }}</label>
+            <select class="input" v-model="editForm.destination">
+              <option value="family">{{ t('transactions.destination.family') }}</option>
+              <option value="personal">{{ t('transactions.destination.personal') }}</option>
+            </select>
+          </div>
           <div v-if="editError" class="empty error-msg">{{ editError }}</div>
         </div>
         <div class="modal-footer">
@@ -77,6 +84,7 @@ import { api } from '../api.js'
 
 const { t } = useI18n()
 
+const me = ref(null)
 const transactions = ref([])
 const accounts = ref([])
 const categories = ref([])
@@ -85,7 +93,7 @@ const error = ref('')
 const month = ref(new Date().toISOString().slice(0, 7))
 
 const editing = ref(null)
-const editForm = ref({ amount: '', description: '', date: '', categoryId: '', accountId: '' })
+const editForm = ref({ amount: '', description: '', date: '', categoryId: '', accountId: '', destination: 'family' })
 const editError = ref('')
 const saving = ref(false)
 
@@ -107,14 +115,23 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const [txRes, accountsRes, categoriesRes] = await Promise.all([
-      api.get('api/transactions', { params: { month: month.value, limit: 100 } }),
+    const [txRes, accountsRes, categoriesRes, meRes] = await Promise.all([
+      // Il limite di 100 tagliava via le transazioni oltre le prime 100 di un
+      // mese (ordinate per data decrescente): un mese con piu' movimenti di
+      // quelli sembrava "vuoto" oltre un certo punto. Il filtro per mese e'
+      // gia' applicato lato server, quindi un limite alto e' solo una
+      // sicurezza contro mesi anomali, non una paginazione reale.
+      api.get('api/transactions', { params: { month: month.value, limit: 1000 } }),
       api.get('api/accounts'),
       api.get('api/categories'),
+      api.get('api/mobile/me').catch(() => null),
     ])
+    if (meRes) me.value = meRes.data
     transactions.value = txRes.data
     accounts.value = accountsRes.data
-    categories.value = categoriesRes.data.filter(c => c.is_active && c.type === 'expense')
+    categories.value = categoriesRes.data
+      .filter(c => c.is_active && c.type === 'expense')
+      .sort((a, b) => a.name.localeCompare(b.name))
   } catch (e) {
     error.value = e?.response?.data?.detail || t('mobile.transactions.loadError')
   } finally {
@@ -131,6 +148,7 @@ function openEdit(tx) {
     date: tx.date,
     categoryId: tx.category_id || '',
     accountId: tx.account_id,
+    destination: tx.destination === 'personal' ? 'personal' : 'family',
   }
 }
 
@@ -144,6 +162,11 @@ async function save() {
       date: editForm.value.date,
       categoryId: editForm.value.categoryId || null,
       accountId: editForm.value.accountId,
+      destination: editForm.value.destination,
+      // Una spesa "personale" e' visibile solo a chi l'ha pagata (vedi
+      // access.py can_see_transaction): senza valorizzare paidByPersonId qui,
+      // segnarla personale da mobile la nasconderebbe a chiunque, incluso te.
+      paidByPersonId: editForm.value.destination === 'personal' ? me.value?.id : undefined,
     })
     editing.value = null
     load()

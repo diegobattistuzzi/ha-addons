@@ -17,6 +17,8 @@
       "ownership": "Titolarità",
       "owner": "Intestatario *",
       "choosePerson": "Scegli la persona",
+      "coOwners": "Visibile anche a",
+      "coOwnersHint": "Le persone selezionate vedono questo conto e le sue transazioni come se fosse loro, oltre all'intestatario.",
       "settlementAccount": "Conto di appoggio",
       "none": "— nessuno —",
       "settlementHint": "Il conto corrente su cui arriva l'addebito mensile riepilogativo. Serve a riconoscere ed evitare la doppia conta quando importi l'estratto di quel conto.",
@@ -24,7 +26,12 @@
       "cardNumberPlaceholder": "es. 7100 (ultime cifre, anche mascherato)",
       "cardNumberHint": "Aiuta l'AI a riconoscere automaticamente il conto quando importi un rendiconto di questa carta.",
       "iban": "IBAN (opzionale)",
-      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000"
+      "ibanPlaceholder": "IT00 X000 0000 0000 0000 0000 000",
+      "amountSignMode": "Segno importi nell'estratto conto",
+      "amountSignModeHint": "Come interpretare il segno degli importi quando importi un file di questa carta. Lascia \"Automatico\" a meno che l'importazione non inverta spese e accrediti.",
+      "amountSignModeAuto": "Automatico (rileva dal testo del file)",
+      "amountSignModeFlip": "Spese sempre positive nel file (da invertire)",
+      "amountSignModeSigned": "Già col segno giusto (spese negative, come American Express)"
     },
     "openingBalance": {
       "buttonTitle": "Imposta saldo iniziale",

@@ -77,7 +77,7 @@
               <td>{{ formatDate(d.uploaded_at) }}</td>
               <td>{{ formatSize(d.size_bytes) }}</td>
               <td class="doc-actions">
-                <a :href="downloadUrl(d.id)" target="_blank" class="btn btn-sm">{{ t('documents.list.download') }}</a>
+                <button class="btn btn-sm" @click="download(d)">{{ t('documents.list.download') }}</button>
                 <button class="btn-icon danger" @click="remove(d)" :title="t('documents.list.deleteTitle')">✕</button>
               </td>
             </tr>
@@ -91,7 +91,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { api } from '../api.js'
+import { api, downloadFile } from '../api.js'
 
 const { t } = useI18n()
 
@@ -170,8 +170,8 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function downloadUrl(id) {
-  return new URL(`api/documents/${id}/download`, document.baseURI).toString()
+function download(d) {
+  downloadFile(`api/documents/${d.id}/download`, d.filename)
 }
 
 async function load() {

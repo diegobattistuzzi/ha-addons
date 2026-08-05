@@ -62,6 +62,24 @@ def _poll_person(person: Dict[str, Any]) -> None:
         )
 
 
+def poll_all_now() -> int:
+    """Forza subito un giro di controllo IMAP per ogni persona con credenziali
+    configurate, ignorando il cooldown del proprio intervallo (usato da
+    POST /api/ha/sync, il servizio HA 'casaspese.sync' - qui non c'e' un vero
+    sync bancario, solo questo controllo email). Restituisce il numero di
+    persone controllate."""
+    persons = _fetchall(
+        "SELECT * FROM persons WHERE imap_host IS NOT NULL AND imap_host != '' "
+        "AND imap_username IS NOT NULL AND imap_username != '' "
+        "AND imap_password IS NOT NULL AND imap_password != ''"
+    )
+    now = time.monotonic()
+    for person in persons:
+        _last_run_monotonic[person['id']] = now
+        _poll_person(person)
+    return len(persons)
+
+
 def _poll_loop() -> None:
     while True:
         try:

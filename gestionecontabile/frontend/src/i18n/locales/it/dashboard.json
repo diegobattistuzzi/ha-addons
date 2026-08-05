@@ -12,6 +12,12 @@
       "toCategorize": "da categorizzare",
       "commonAccountsBalance": "Saldo conti comuni"
     },
+    "destination": {
+      "title": "Spese personali vs comuni — {month}",
+      "family": "Comuni",
+      "personal": "Personali (mie)",
+      "split": "Condivise a metà"
+    },
     "trend": {
       "title": "Andamento spese — ultimi 6 mesi"
     },
@@ -24,7 +30,6 @@
       "title": "Sensori HA",
       "budgetOkMonth": "Budget OK (mese)",
       "budgetOkYear": "Budget OK (anno)",
-      "bankSync": "Sync bancario",
       "expensesToday": "Spese oggi",
       "expensesYear": "Spese anno",
       "monthlyOverBudget": "Budget mensili sforati",

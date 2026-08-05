@@ -1,7 +1,7 @@
 name: Spese di casa
-version: "1.0.16"
+version: "1.0.27"
 slug: casaspese
-description: Gestione spese familiari con AI e Open Banking PSD2
+description: Gestione spese familiari con AI
 url: https://github.com/user/casaspese-addon
 arch:
   - aarch64
@@ -33,8 +33,6 @@ options:
   ai_model: gpt-4o-mini
   openai_api_key: ""
   anthropic_api_key: ""
-  nordigen_secret_id: ""
-  nordigen_secret_key: ""
   sync_interval_minutes: 30
   ha_token: ""
   public_url: ""
@@ -43,8 +41,6 @@ schema:
   ai_model: str
   openai_api_key: str
   anthropic_api_key: str
-  nordigen_secret_id: str
-  nordigen_secret_key: str
   sync_interval_minutes: int(5,1440)
   ha_token: str
   public_url: str

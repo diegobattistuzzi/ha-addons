@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "title": "Regole di riconoscimento",
+    "addButton": "Nuova regola",
+    "empty": "Nessuna regola configurata.",
+    "hint": "Le regole vengono valutate prima delle parole chiave di categoria e dell'AI, in ordine di priorità (più alta prima): la prima che corrisponde alla causale (e al segno, se impostato) assegna categoria e, se scelto, destinazione/persona, e conferma subito la transazione.",
+    "activate": "Attiva regola",
+    "deactivate": "Disattiva regola",
+    "confirmDelete": "Eliminare la regola \"{pattern}\"?",
+    "modal": {
+      "addTitle": "Nuova regola",
+      "editTitle": "Modifica regola"
+    },
+    "form": {
+      "pattern": "Pattern (cerca nella causale)",
+      "patternPlaceholder": "es. amazon, esso benzina...",
+      "isRegex": "Espressione regolare",
+      "isRegexHint": "Se disattivo, il pattern deve semplicemente essere contenuto nella causale (case-insensitive). Se attivo, è trattato come regex.",
+      "sign": "Segno importo",
+      "signAny": "Qualsiasi",
+      "signNegative": "Solo uscite",
+      "signPositive": "Solo entrate",
+      "destination": "Destinazione",
+      "destinationUnchanged": "— non modificare —",
+      "paidBy": "Persona",
+      "paidByUnchanged": "— non modificare —",
+      "priority": "Priorità",
+      "priorityHint": "A parità di corrispondenza, la regola con priorità più alta vince.",
+      "isActive": "Regola attiva"
+    },
+    "errors": {
+      "patternRequired": "Il pattern è obbligatorio",
+      "categoryRequired": "La categoria è obbligatoria",
+      "loadFailed": "Errore caricamento",
+      "saveFailed": "Errore salvataggio"
+    }
+  }
+}

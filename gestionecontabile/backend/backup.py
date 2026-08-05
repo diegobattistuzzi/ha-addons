@@ -16,7 +16,7 @@ SHEET_SPECS = {
     ],
     'accounts': [
         'id', 'name', 'bank', 'type', 'ownership', 'owner_id', 'co_owners', 'iban', 'color',
-        'nordigen_id', 'balance', 'is_active', 'settlement_account_id',
+        'balance', 'is_active', 'settlement_account_id',
     ],
     'budgets': ['id', 'category_id', 'year_month', 'amount'],
     'transactions': [
@@ -26,8 +26,12 @@ SHEET_SPECS = {
         'import_source', 'import_batch_id', 'reimbursement_of', 'notes', 'merchant_enriched',
         'is_reimbursable', 'reimbursed_at', 'document_id',
     ],
+    'import_rules': [
+        'id', 'pattern', 'is_regex', 'sign', 'category_id', 'destination', 'paid_by_person_id',
+        'split_person_id', 'split_ratio', 'priority', 'is_active',
+    ],
 }
-IMPORT_ORDER = ['persons', 'categories', 'accounts', 'budgets', 'transactions']
+IMPORT_ORDER = ['persons', 'categories', 'accounts', 'budgets', 'transactions', 'import_rules']
 
 
 def _fetchall(query: str) -> List[Dict[str, Any]]:

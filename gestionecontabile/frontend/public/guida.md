@@ -9,14 +9,15 @@ L'app è organizzata nelle sezioni della barra laterale:
 - **Dashboard** — riepilogo del mese in corso, con scorciatoie per aggiungere una spesa o importare un estratto conto.
 - **Transazioni** — il registro principale: elenco e filtro di tutte le transazioni, inserimento manuale, import estratto conto, aggiunta rapida via AI (testo libero), revisione delle categorie suggerite dall'AI.
 - **Report** — andamento nel tempo (grafici) e un builder per report personalizzati.
+- **Assistente** — riepilogo narrativo del mese scritto dall'AI, rilevamento di spese anomale (picchi per categoria, nuovi esercenti) e una chat per fare domande sui dati o costruire/salvare un report personalizzato.
 - **Bilancio** — chi ha versato/speso cosa, per mese o su tutto il periodo (vedi più sotto).
 - **Documenti** — copertura documentale (quali mesi/conti hanno l'estratto conto caricato) e archivio dei file importati.
 - **Messaggi email** — ricevute d'acquisto (PayPal, Amazon, negozi) intercettate via email e il loro stato di abbinamento automatico alle transazioni.
 - **Persone** — anagrafica dei membri della famiglia; da qui si genera anche l'accesso mobile via QR (vedi sotto).
 - **Conti** — anagrafica dei conti (correnti, carte, contanti, buoni pasto): qui si distingue un conto personale da uno comune.
 - **Categorie** — albero delle categorie di spesa/entrata/trasferimento, con parole chiave usate dalla categorizzazione automatica.
-- **Bank Sync** — sincronizzazione automatica (Open Banking) dei conti collegati, quando configurata.
-- **Impostazioni** — stato collegamento col backend e configurazione iniziale.
+- **Regole** — regole personalizzate per riconoscere automaticamente le transazioni ricorrenti (vedi "Traccia spese" più sotto).
+- **Impostazioni** — wizard di configurazione iniziale (persone, conti, categorie, chiave AI).
 
 ## Gestione del conto comune
 
@@ -58,10 +59,11 @@ Perché diverse:
 Ogni transazione ha uno stato **confermata / da confermare**:
 
 - Le transazioni **importate** da estratto conto entrano sempre da confermare, ed entrano nella pipeline di categorizzazione automatica:
-  1. se la causale cita l'IBAN di un altro conto già censito, viene taggata come **Trasferimenti** (probabile giroconto interno);
-  2. altrimenti si cerca una corrispondenza tra le parole chiave delle categorie;
-  3. le transazioni rimaste vengono mandate all'AI, che propone una categoria con un livello di confidenza.
-  In tutti i casi si tratta solo di un **suggerimento** (`ai_category_id`): la transazione resta da confermare finché non la approvi.
+  1. si controlla prima se una **regola** (pagina **Regole**) corrisponde alla descrizione (testo o regex) e al segno dell'importo: in caso di match la transazione viene categorizzata **e già confermata** direttamente, perché è una scelta esplicita dell'utente — non un suggerimento. Una regola può anche impostare destinazione (famiglia/personale/split), chi ha pagato o con chi è divisa. Utile per movimenti ricorrenti (bollette, stipendio, abbonamenti) che altrimenti andrebbero riconfermati ogni mese;
+  2. se nessuna regola corrisponde e la causale cita l'IBAN di un altro conto già censito, viene taggata come **Trasferimenti** (probabile giroconto interno);
+  3. altrimenti si cerca una corrispondenza tra le parole chiave delle categorie;
+  4. le transazioni rimaste vengono mandate all'AI, che propone una categoria con un livello di confidenza.
+  Nei punti 2-4 si tratta solo di un **suggerimento** (`ai_category_id`): la transazione resta da confermare finché non la approvi. Solo le regole (punto 1) confermano subito.
 - In **Transazioni** le righe con suggerimento AI mostrano un'icona ✦ e compaiono in un banner in alto ("N categorizzate da AI") con pulsanti "Mostra" e "Approva tutte". Riga per riga c'è un ✓ per accettare il singolo suggerimento; selezionando più righe si può confermare o scartare il suggerimento in blocco.
 - Le transazioni **inserite manualmente** (form desktop o scansione scontrino) sono già confermate al salvataggio: l'utente ha già validato i dati inserendoli.
 - **Abbinamento email ricevute** (pagina "Messaggi email"): l'app intercetta le email di conferma acquisto (PayPal, Amazon, negozi), estrae con l'AI esercente/importo/data/descrizione e prova ad abbinarle a una transazione già importata con lo stesso importo e una data vicina (±5 giorni). Se trova corrispondenza, arricchisce la transazione con il nome reale dell'esercente e delle note — utile perché l'estratto conto spesso mostra solo una sigla generica ("PAGAMENTO POS ABC123"), mentre l'email dice cosa hai comprato davvero, senza lavoro manuale. Se non trova corrispondenza al momento, il tentativo viene ripetuto al prossimo import, oppure manualmente col pulsante "Riabbina mail".

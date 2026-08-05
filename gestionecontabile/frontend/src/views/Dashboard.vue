@@ -33,6 +33,22 @@
         </div>
       </div>
 
+      <!-- Spese personali vs comuni -->
+      <div class="card" style="margin-bottom:24px" v-if="destinationBreakdown.length">
+        <div class="card-title">{{ t('dashboard.destination.title', { month }) }}</div>
+        <div class="dest-bar-track">
+          <div v-for="d in destinationBreakdown" :key="d.key" class="dest-bar-seg"
+            :style="{ width: d.pct + '%', background: d.color }" :title="`${d.label}: ${fmt(d.total)}`"></div>
+        </div>
+        <div class="dest-legend">
+          <div v-for="d in destinationBreakdown" :key="d.key" class="dest-legend-item">
+            <span class="dest-dot" :style="{ background: d.color }"></span>
+            <span class="dest-label">{{ d.label }}</span>
+            <span class="num dest-value">{{ fmt(d.total) }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Andamento spese -->
       <div class="card" style="margin-bottom:24px">
         <div class="card-title">{{ t('dashboard.trend.title') }}</div>
@@ -76,7 +92,6 @@
           <div class="card-title">{{ t('dashboard.sensors.title') }}</div>
           <div class="sensor-row"><span>{{ t('dashboard.sensors.budgetOkMonth') }}</span><span :class="sensors.budget_ok ? 'ok' : 'warn'">{{ sensors.budget_ok ? '✓' : '✗' }}</span></div>
           <div class="sensor-row"><span>{{ t('dashboard.sensors.budgetOkYear') }}</span><span :class="sensors.budget_ok_annual ? 'ok' : 'warn'">{{ sensors.budget_ok_annual ? '✓' : '✗' }}</span></div>
-          <div class="sensor-row"><span>{{ t('dashboard.sensors.bankSync') }}</span><span :class="sensors.sync_ok ? 'ok' : 'warn'">{{ sensors.sync_ok ? '✓' : '✗' }}</span></div>
           <div class="sensor-row"><span>{{ t('dashboard.sensors.expensesToday') }}</span><span class="num">{{ fmt(sensors.spese_oggi) }}</span></div>
           <div class="sensor-row"><span>{{ t('dashboard.sensors.expensesYear') }}</span><span class="num">{{ fmt(sensors.spese_anno) }}</span></div>
           <div v-if="sensors.over_budget?.length" class="over-budget-list">
@@ -97,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api as axios } from '../api.js'
 import TrendChart from '../components/TrendChart.vue'
@@ -114,6 +129,27 @@ function fmt(v) {
   if (v == null) return '—'
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v)
 }
+
+// Spese del mese per destinazione (byDestination gia' rispetta la
+// visibilita' dell'utente collegato: 'personal' qui e' gia' solo la sua
+// quota, non quella di tutta la famiglia - vedi access.transaction_visibility).
+const destinationBreakdown = computed(() => {
+  const rows = summary.value?.byDestination || []
+  const totals = { family: 0, personal: 0, split: 0 }
+  for (const r of rows) {
+    if (r.destination in totals) totals[r.destination] += r.total
+  }
+  const grandTotal = totals.family + totals.personal + totals.split
+  if (!grandTotal) return []
+  const defs = [
+    { key: 'family',   label: t('dashboard.destination.family'),   color: '#1D3557' },
+    { key: 'personal', label: t('dashboard.destination.personal'), color: '#E8A020' },
+    { key: 'split',    label: t('dashboard.destination.split'),    color: '#2A9D8F' },
+  ]
+  return defs
+    .map(d => ({ ...d, total: totals[d.key], pct: (totals[d.key] / grandTotal) * 100 }))
+    .filter(d => d.total > 0)
+})
 
 onMounted(async () => {
   try {
@@ -160,4 +196,11 @@ onMounted(async () => {
 .ok { color:#2A9D8F; font-weight:600; }
 .warn { color:#E76F51; font-weight:600; }
 .over-budget-item { font-size:12px; color:#E8A020; padding:3px 0; }
+.dest-bar-track { height:10px; background:#F0EEE9; display:flex; overflow:hidden; margin-bottom:14px; }
+.dest-bar-seg { height:100%; }
+.dest-legend { display:flex; flex-wrap:wrap; gap:20px; }
+.dest-legend-item { display:flex; align-items:center; gap:7px; font-size:12.5px; }
+.dest-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.dest-label { color:#5C5752; }
+.dest-value { font-weight:600; }
 </style>

@@ -8,27 +8,57 @@
     <div class="content">
       <div v-if="!me && meError" class="empty error-msg">
         {{ meError }}
+        <button type="button" class="retry-btn" @click="loadContext()">{{ t('mobile.scan.retry') }}</button>
       </div>
 
       <template v-else>
-        <label class="photo-drop" :class="{ busy: parsing }">
+        <div v-if="cropping" class="crop-stage">
+          <div class="crop-wrap" ref="cropWrapRef">
+            <img ref="cropImgRef" :src="rawPreviewUrl" class="crop-img" @load="onCropImageLoad" />
+            <template v-if="cropReady">
+              <svg class="crop-overlay" :viewBox="`0 0 ${cropWrapSize.w} ${cropWrapSize.h}`">
+                <polygon :points="polygonPoints" class="crop-poly" />
+              </svg>
+              <div
+                v-for="key in cornerKeys"
+                :key="key"
+                class="crop-handle"
+                :style="{ left: displayCorners[key].x + 'px', top: displayCorners[key].y + 'px' }"
+                @pointerdown="startDrag(key, $event)"
+              ></div>
+            </template>
+          </div>
+          <div class="hint">{{ t('mobile.scan.cropHint') }}</div>
+          <div class="crop-actions">
+            <button type="button" class="btn" @click="skipCrop">{{ t('mobile.scan.cropSkip') }}</button>
+            <button type="button" class="btn btn-primary" @click="confirmCrop" :disabled="!cropReady">{{ t('mobile.scan.cropConfirm') }}</button>
+          </div>
+        </div>
+
+        <label v-else class="photo-drop" :class="{ busy: parsing }">
           <input type="file" accept="image/*" capture="environment" @change="onFileChange" :disabled="parsing" />
           <img v-if="previewUrl" :src="previewUrl" class="preview" />
           <span v-else class="photo-hint">{{ t('mobile.scan.takePhoto') }}</span>
         </label>
 
-        <div class="or-divider">{{ t('mobile.scan.or') }}</div>
+        <template v-if="!cropping">
+          <div class="or-divider">{{ t('mobile.scan.or') }}</div>
 
-        <button type="button" class="voice-btn" :class="{ listening }" :disabled="parsing || !voiceSupported" @click="toggleVoice">
-          <span class="voice-icon">{{ listening ? '⏹️' : '🎤' }}</span>
-          {{ listening ? t('mobile.scan.voiceListening') : t('mobile.scan.voiceButton') }}
-        </button>
-        <div v-if="!voiceSupported" class="hint">{{ t('mobile.scan.voiceNotSupported') }}</div>
-        <div v-else-if="voiceTranscript" class="hint">"{{ voiceTranscript }}"</div>
-        <div v-if="voiceError" class="empty error-msg">{{ voiceError }}</div>
+          <button type="button" class="voice-btn" :class="{ listening }" :disabled="parsing || !voiceSupported" @click="toggleVoice">
+            <span class="voice-icon">{{ listening ? '⏹️' : '🎤' }}</span>
+            {{ listening ? t('mobile.scan.voiceListening') : t('mobile.scan.voiceButton') }}
+          </button>
+          <div v-if="!voiceSupported" class="hint">{{ t('mobile.scan.voiceNotSupported') }}</div>
+          <div v-else-if="voiceTranscript" class="hint">"{{ voiceTranscript }}"</div>
+          <div v-if="voiceError" class="empty error-msg">{{ voiceError }}</div>
 
-        <div v-if="parsing" class="hint">{{ t('mobile.scan.analyzing') }}</div>
-        <div v-if="parseError" class="empty error-msg">{{ parseError }}</div>
+          <div v-if="parsing" class="hint">{{ t('mobile.scan.analyzing') }}</div>
+          <div v-if="parseError" class="empty error-msg">{{ parseError }}</div>
+
+          <button v-if="!showForm" type="button" class="manual-link" @click="startManualEntry">
+            {{ t('mobile.scan.manualEntry') }}
+          </button>
+        </template>
 
         <form v-if="showForm" class="form" @submit.prevent="save">
           <div class="form-group">
@@ -59,6 +89,13 @@
               </option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="label">{{ t('mobile.scan.destinationLabel') }}</label>
+            <select class="input" v-model="form.destination">
+              <option value="family">{{ t('transactions.destination.family') }}</option>
+              <option value="personal">{{ t('transactions.destination.personal') }}</option>
+            </select>
+          </div>
 
           <div v-if="saveError" class="empty error-msg">{{ saveError }}</div>
 
@@ -74,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api.js'
 
@@ -100,11 +137,182 @@ const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRec
 const voiceSupported = !!SpeechRecognitionImpl
 let recognition = null
 
-const form = ref({ amount: '', merchantName: '', date: '', categoryId: '', accountId: '', isCash: false })
+const form = ref({ amount: '', merchantName: '', date: '', categoryId: '', accountId: '', isCash: false, destination: 'family' })
 const capturedFile = ref(null)
 const showForm = computed(() => hasResult.value && !parsing.value)
 
-async function loadContext() {
+// Ritaglio scontrino: rilevamento bordi + prospettiva via jscanify/OpenCV.js,
+// caricati pigramente (sono pesanti, ~8MB) solo quando serve, cosi' non
+// appesantiscono il caricamento iniziale della PWA. Se il rilevamento fallisce
+// o le librerie non si caricano (rete instabile), l'utente puo' comunque
+// procedere con "Usa foto originale": il ritaglio e' solo un miglioramento
+// estetico dell'allegato, non deve mai bloccare il flusso di inserimento spesa.
+const cropping = ref(false)
+const cropReady = ref(false)
+const rawPreviewUrl = ref('')
+const cropImgRef = ref(null)
+const cropWrapRef = ref(null)
+const cropWrapSize = ref({ w: 0, h: 0 })
+const displayScale = ref(1)
+const cornerKeys = ['topLeftCorner', 'topRightCorner', 'bottomLeftCorner', 'bottomRightCorner']
+const cropNatural = ref(null)
+const draggingCorner = ref(null)
+let scannerPromise = null
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script')
+    el.src = src
+    el.onload = resolve
+    el.onerror = () => reject(new Error(`load failed: ${src}`))
+    document.head.appendChild(el)
+  })
+}
+
+function ensureScanner() {
+  if (!scannerPromise) {
+    scannerPromise = (async () => {
+      const base = import.meta.env.BASE_URL
+      await loadScript(`${base}vendor/opencv.js`)
+      await new Promise(resolve => {
+        if (window.cv?.Mat) return resolve()
+        window.cv['onRuntimeInitialized'] = resolve
+      })
+      await loadScript(`${base}vendor/jscanify.js`)
+      return new window.jscanify()
+    })()
+  }
+  return scannerPromise
+}
+
+function distance(p1, p2) {
+  return Math.hypot(p1.x - p2.x, p1.y - p2.y)
+}
+
+function defaultCorners(w, h) {
+  const m = 0.05
+  return {
+    topLeftCorner: { x: w * m, y: h * m },
+    topRightCorner: { x: w * (1 - m), y: h * m },
+    bottomLeftCorner: { x: w * m, y: h * (1 - m) },
+    bottomRightCorner: { x: w * (1 - m), y: h * (1 - m) },
+  }
+}
+
+const displayCorners = computed(() => {
+  const scale = displayScale.value
+  const c = cropNatural.value || defaultCorners(0, 0)
+  const out = {}
+  for (const key of cornerKeys) out[key] = { x: c[key].x * scale, y: c[key].y * scale }
+  return out
+})
+
+const polygonPoints = computed(() => {
+  const c = displayCorners.value
+  return ['topLeftCorner', 'topRightCorner', 'bottomRightCorner', 'bottomLeftCorner']
+    .map(key => `${c[key].x},${c[key].y}`)
+    .join(' ')
+})
+
+async function onCropImageLoad() {
+  const imgEl = cropImgRef.value
+  if (!imgEl) return
+  const naturalW = imgEl.naturalWidth
+  const naturalH = imgEl.naturalHeight
+  cropWrapSize.value = { w: imgEl.clientWidth, h: imgEl.clientHeight }
+  displayScale.value = imgEl.clientWidth / naturalW
+  cropNatural.value = defaultCorners(naturalW, naturalH)
+
+  try {
+    const scanner = await ensureScanner()
+    const img = window.cv.imread(imgEl)
+    const contour = scanner.findPaperContour(img)
+    if (contour) {
+      const corners = scanner.getCornerPoints(contour)
+      contour.delete()
+      if (corners.topLeftCorner && corners.topRightCorner && corners.bottomLeftCorner && corners.bottomRightCorner) {
+        cropNatural.value = corners
+      }
+    }
+    img.delete()
+  } catch {
+    // Niente rilevamento automatico: restano gli angoli di default, l'utente li aggiusta a mano.
+  }
+  cropReady.value = true
+}
+
+function startDrag(key, event) {
+  event.preventDefault()
+  draggingCorner.value = key
+  window.addEventListener('pointermove', onDrag)
+  window.addEventListener('pointerup', stopDrag)
+}
+
+function onDrag(event) {
+  if (!draggingCorner.value || !cropWrapRef.value) return
+  const rect = cropWrapRef.value.getBoundingClientRect()
+  const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width)
+  const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height)
+  const scale = displayScale.value || 1
+  cropNatural.value = { ...cropNatural.value, [draggingCorner.value]: { x: x / scale, y: y / scale } }
+}
+
+function stopDrag() {
+  draggingCorner.value = null
+  window.removeEventListener('pointermove', onDrag)
+  window.removeEventListener('pointerup', stopDrag)
+}
+
+async function confirmCrop() {
+  const imgEl = cropImgRef.value
+  const corners = cropNatural.value
+  try {
+    const scanner = await ensureScanner()
+    const widthTop = distance(corners.topLeftCorner, corners.topRightCorner)
+    const widthBottom = distance(corners.bottomLeftCorner, corners.bottomRightCorner)
+    const heightLeft = distance(corners.topLeftCorner, corners.bottomLeftCorner)
+    const heightRight = distance(corners.topRightCorner, corners.bottomRightCorner)
+    const outW = Math.round(Math.max(widthTop, widthBottom))
+    const outH = Math.round(Math.max(heightLeft, heightRight))
+    const canvas = scanner.extractPaper(imgEl, outW, outH, corners)
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+    const croppedFile = new File([blob], 'scontrino.jpg', { type: 'image/jpeg' })
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = URL.createObjectURL(blob)
+    capturedFile.value = croppedFile
+    finishCropStage()
+    await analyzeReceipt(croppedFile)
+  } catch {
+    // Estrazione fallita: si prosegue con la foto originale, il ritaglio resta solo un miglioramento facoltativo.
+    await skipCrop()
+  }
+}
+
+async function skipCrop() {
+  previewUrl.value = rawPreviewUrl.value
+  rawPreviewUrl.value = ''
+  cropping.value = false
+  cropReady.value = false
+  cropNatural.value = null
+  await analyzeReceipt(capturedFile.value)
+}
+
+function finishCropStage() {
+  cropping.value = false
+  cropReady.value = false
+  cropNatural.value = null
+  URL.revokeObjectURL(rawPreviewUrl.value)
+  rawPreviewUrl.value = ''
+}
+
+// Un 401 vero (token invalido/revocato) e' l'unico caso in cui ha senso dire
+// all'utente "il link e' scaduto/revocato": qualunque altro errore (rete
+// instabile al risveglio del telefono, backend che si sta ancora avviando,
+// timeout) e' transitorio e sparisce da solo - riprovare in automatico un
+// paio di volte evita di allarmare l'utente e di richiedere un refresh
+// manuale per un problema che si risolve da solo in un secondo.
+async function loadContext(attempt = 1) {
+  meError.value = ''
   try {
     const [meRes, accountsRes, categoriesRes] = await Promise.all([
       api.get('api/mobile/me'),
@@ -113,10 +321,33 @@ async function loadContext() {
     ])
     me.value = meRes.data
     accounts.value = accountsRes.data
-    categories.value = categoriesRes.data.filter(c => c.is_active && c.type === 'expense')
+    categories.value = categoriesRes.data
+      .filter(c => c.is_active && c.type === 'expense')
+      .sort((a, b) => a.name.localeCompare(b.name))
   } catch (e) {
-    meError.value = e?.response?.data?.detail || t('mobile.scan.contextError')
+    const isAuthError = e?.response?.status === 401
+    if (!isAuthError && attempt < 3) {
+      await new Promise(r => setTimeout(r, attempt * 800))
+      return loadContext(attempt + 1)
+    }
+    meError.value = isAuthError
+      ? (e?.response?.data?.detail || t('mobile.scan.contextError'))
+      : t('mobile.scan.connectionError')
   }
+}
+
+// Foto e dettatura sono scorciatoie per precompilare il form, non l'unico modo
+// per inserire una spesa: senza questo, chi non puo'/non vuole parlare o
+// scattare una foto (rumore ambientale, mani occupate, scontrino illeggibile)
+// non avrebbe alternative per registrare la spesa dal cellulare.
+function startManualEntry() {
+  previewUrl.value = ''
+  capturedFile.value = null
+  voiceTranscript.value = ''
+  parseError.value = ''
+  savedOk.value = false
+  form.value = { amount: '', merchantName: '', date: new Date().toISOString().slice(0, 10), categoryId: '', accountId: '', isCash: false, destination: 'family' }
+  hasResult.value = true
 }
 
 function onAccountChange() {
@@ -124,17 +355,22 @@ function onAccountChange() {
   form.value.isCash = acc?.type === 'cash'
 }
 
-async function onFileChange(event) {
+function onFileChange(event) {
   const file = event.target.files?.[0]
   if (!file) return
   capturedFile.value = file
-  previewUrl.value = URL.createObjectURL(file)
-  hasResult.value = true
+  rawPreviewUrl.value = URL.createObjectURL(file)
   savedOk.value = false
   saveError.value = ''
   parseError.value = ''
   voiceError.value = ''
   voiceTranscript.value = ''
+  cropReady.value = false
+  cropping.value = true
+}
+
+async function analyzeReceipt(file) {
+  hasResult.value = true
   parsing.value = true
   try {
     const body = new FormData()
@@ -214,12 +450,13 @@ async function save() {
   try {
     const { data: created } = await api.post('api/transactions', {
       date: form.value.date,
-      amount: form.value.amount,
+      amount: -Math.abs(Number(form.value.amount)),
       description: form.value.merchantName || t('mobile.scan.defaultDescription'),
       merchantName: form.value.merchantName,
       categoryId: form.value.categoryId || null,
       accountId: form.value.accountId,
       isCash: form.value.isCash,
+      destination: form.value.destination,
       paidByPersonId: me.value?.id,
     })
     // La foto dello scontrino e' servita finora solo per farla leggere all'AI:
@@ -239,7 +476,7 @@ async function save() {
     capturedFile.value = null
     hasResult.value = false
     voiceTranscript.value = ''
-    form.value = { amount: '', merchantName: '', date: '', categoryId: '', accountId: '', isCash: false }
+    form.value = { amount: '', merchantName: '', date: '', categoryId: '', accountId: '', isCash: false, destination: 'family' }
   } catch (e) {
     saveError.value = e?.response?.data?.detail || t('mobile.scan.saveError')
   } finally {
@@ -248,6 +485,7 @@ async function save() {
 }
 
 onMounted(loadContext)
+onBeforeUnmount(stopDrag)
 </script>
 
 <style scoped>
@@ -255,6 +493,19 @@ onMounted(loadContext)
 .topbar { background:#fff; border-bottom:1px solid #DDD9D0; padding:14px 20px; position:sticky; top:0; z-index:10; }
 .topbar-title { font-size:16px; font-weight:600; }
 .topbar-meta { font-size:12px; color:#9A938C; margin-top:2px; }
+
+.crop-stage { display:flex; flex-direction:column; gap:8px; }
+.crop-wrap { position:relative; width:100%; user-select:none; -webkit-user-select:none; touch-action:none; }
+.crop-img { width:100%; height:auto; display:block; border-radius:6px; }
+.crop-overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.crop-poly { fill:rgba(29,53,87,0.25); stroke:#1D3557; stroke-width:3; }
+.crop-handle {
+  position:absolute; width:28px; height:28px; margin-left:-14px; margin-top:-14px;
+  border-radius:50%; background:#1D3557; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.4);
+  cursor:grab; touch-action:none;
+}
+.crop-actions { display:flex; gap:10px; margin-top:6px; }
+.crop-actions .btn { flex:1; }
 
 .content { padding:20px; max-width:480px; margin:0 auto; }
 
@@ -273,6 +524,8 @@ onMounted(loadContext)
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
 
 .hint { text-align:center; color:#9A938C; font-size:13px; margin-top:10px; }
+.manual-link { display:block; width:100%; text-align:center; background:none; border:none; color:#1D3557; font-size:13px; text-decoration:underline; cursor:pointer; padding:14px 0 4px; }
+.retry-btn { display:block; margin:10px auto 0; padding:8px 18px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid #E76F51; border-radius:6px; background:#fff; color:#E76F51; }
 .empty { text-align:center; padding:16px; font-size:13px; }
 .error-msg { color:#E76F51; }
 .success-msg { color:#2A9D8F; font-weight:600; }

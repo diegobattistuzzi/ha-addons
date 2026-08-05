@@ -12,6 +12,12 @@
       "toCategorize": "to categorize",
       "commonAccountsBalance": "Shared accounts balance"
     },
+    "destination": {
+      "title": "Personal vs shared expenses — {month}",
+      "family": "Shared",
+      "personal": "Personal (mine)",
+      "split": "Split 50/50"
+    },
     "trend": {
       "title": "Expense trend — last 6 months"
     },
@@ -24,7 +30,6 @@
       "title": "HA Sensors",
       "budgetOkMonth": "Budget OK (month)",
       "budgetOkYear": "Budget OK (year)",
-      "bankSync": "Bank sync",
       "expensesToday": "Today's expenses",
       "expensesYear": "Year's expenses",
       "monthlyOverBudget": "Monthly budgets exceeded",

@@ -15,6 +15,16 @@
       "infoLine1": "The AI key (OpenAI/Anthropic) is configured in <strong>Settings → Add-on → CasaSpese → Configuration</strong> in Home Assistant.",
       "infoLine2": "Without an AI key configured, categorization and PDF import still try the Home Assistant AI task, if available."
     },
+    "privacy": {
+      "title": "Privacy and visibility",
+      "levelLabel": "Personal data segregation level",
+      "levels": {
+        "segregated": "Segregated (default) — personal accounts/expenses visible only to the owner, unless shared per account",
+        "accountsOnly": "Accounts only — everyone sees that a personal account exists, but not its transactions",
+        "open": "Open — everyone sees everything, no segregation"
+      },
+      "hint": "Per-account exceptions (\"Also visible to\" in Bank accounts) still apply with Segregated and Accounts only — with Open, segregation is fully disabled and those exceptions no longer matter."
+    },
     "maintenance": {
       "title": "Maintenance",
       "hint": "If you see empty or duplicate people or accounts in the Registry pages, use this button to remove them.",

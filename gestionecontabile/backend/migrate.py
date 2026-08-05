@@ -62,8 +62,6 @@ def run_migrations():
              co_owners TEXT,
              iban TEXT,
              color TEXT,
-             nordigen_id TEXT,
-             last_sync_at TEXT,
              balance REAL,
              is_active INTEGER DEFAULT 1,
              created_at TEXT DEFAULT (datetime('now'))
@@ -115,16 +113,6 @@ def run_migrations():
              amount REAL NOT NULL,
              created_at TEXT DEFAULT (datetime('now')),
              UNIQUE(category_id, year_month)
-           )''',
-        '''CREATE TABLE IF NOT EXISTS bank_sync_log (
-             id INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_id INTEGER REFERENCES accounts(id),
-             synced_at TEXT DEFAULT (datetime('now')),
-             tx_fetched INTEGER DEFAULT 0,
-             tx_new INTEGER DEFAULT 0,
-             tx_duplicate INTEGER DEFAULT 0,
-             error TEXT,
-             duration_ms INTEGER
            )''',
         '''CREATE TABLE IF NOT EXISTS settings (
              key TEXT PRIMARY KEY,
@@ -193,9 +181,64 @@ def run_migrations():
         'CREATE INDEX IF NOT EXISTS idx_tx_account ON transactions(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_tx_category ON transactions(category_id)',
         'CREATE INDEX IF NOT EXISTS idx_tx_confirmed ON transactions(is_confirmed)',
+        'CREATE INDEX IF NOT EXISTS idx_tx_amount ON transactions(amount)',
         'CREATE INDEX IF NOT EXISTS idx_documents_account ON documents(account_id)',
         'CREATE INDEX IF NOT EXISTS idx_documents_batch ON documents(import_batch_id)',
         'CREATE INDEX IF NOT EXISTS idx_email_receipts_matched ON email_receipts(matched_transaction_id)',
+        # Coppie di transazioni gia' esaminate e giudicate NON duplicate
+        # dall'utente (vedi GET /api/transactions/duplicates): sempre inserite
+        # con transaction_id_a < transaction_id_b (normalizzato lato Python)
+        # cosi' l'UNIQUE funziona indipendentemente dall'ordine in cui la
+        # coppia viene ritrovata da una scansione successiva.
+        '''CREATE TABLE IF NOT EXISTS transaction_dedup_dismissals (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             transaction_id_a INTEGER NOT NULL,
+             transaction_id_b INTEGER NOT NULL,
+             dismissed_at TEXT DEFAULT (datetime('now')),
+             UNIQUE(transaction_id_a, transaction_id_b)
+           )''',
+        # Regole utente per riconoscere automaticamente le transazioni in
+        # import (vedi categorize.py, valutate PRIMA delle keyword di
+        # categoria/AI): a differenza delle keyword, una regola puo' impostare
+        # anche destinazione/persona, non solo la categoria, e se matcha
+        # conferma subito la transazione (is_confirmed=1) invece di lasciarla
+        # come suggerimento AI da rivedere - e' una scelta esplicita
+        # dell'utente, non un'ipotesi.
+        '''CREATE TABLE IF NOT EXISTS import_rules (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             pattern TEXT NOT NULL,
+             is_regex INTEGER DEFAULT 0,
+             sign TEXT,
+             category_id INTEGER NOT NULL REFERENCES categories(id),
+             destination TEXT,
+             paid_by_person_id INTEGER REFERENCES persons(id),
+             split_person_id INTEGER REFERENCES persons(id),
+             split_ratio REAL,
+             priority INTEGER DEFAULT 0,
+             is_active INTEGER DEFAULT 1,
+             created_at TEXT DEFAULT (datetime('now'))
+           )''',
+        'CREATE INDEX IF NOT EXISTS idx_import_rules_active ON import_rules(is_active)',
+        # Cronologia dell'assistente AI: una conversazione per thread di chat,
+        # scoped per persona (a differenza di saved_reports) perche' le domande
+        # fatte in chat possono riferirsi a dati personali dell'utente.
+        '''CREATE TABLE IF NOT EXISTS ai_conversations (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             person_id INTEGER REFERENCES persons(id),
+             title TEXT NOT NULL,
+             created_at TEXT DEFAULT (datetime('now')),
+             updated_at TEXT DEFAULT (datetime('now'))
+           )''',
+        '''CREATE TABLE IF NOT EXISTS ai_messages (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             conversation_id INTEGER NOT NULL REFERENCES ai_conversations(id),
+             role TEXT NOT NULL,
+             content TEXT NOT NULL,
+             query_config_json TEXT,
+             created_at TEXT DEFAULT (datetime('now'))
+           )''',
+        'CREATE INDEX IF NOT EXISTS idx_ai_conversations_person ON ai_conversations(person_id)',
+        'CREATE INDEX IF NOT EXISTS idx_ai_messages_conversation ON ai_messages(conversation_id)',
     ]
 
     for stmt in statements:
@@ -275,6 +318,32 @@ def run_migrations():
     # sola transazione ma una transazione puo' avere piu' allegati.
     try:
         _execute('ALTER TABLE documents ADD COLUMN transaction_id INTEGER REFERENCES transactions(id)')
+    except sqlite3.OperationalError:
+        pass
+
+    # Convenzione dei segni usata dall'estratto conto della carta (vedi
+    # server.py parse_tabular_rows): l'euristica automatica assume che le
+    # spese siano l'unica colonna importo sempre positiva, come nella
+    # maggioranza dei rendiconti carta - ma American Express esporta gia' le
+    # spese come negative e gli accrediti/storni come positivi, cioe' la
+    # convenzione opposta e coerente con quella dell'app. Quando l'euristica
+    # sbaglia per un istituto specifico, l'utente puo' fissare qui il
+    # comportamento per quel conto invece di affidarsi al testo del
+    # preambolo: 'auto' (default, euristica sul testo), 'flip' (spese sempre
+    # positive nel file, da invertire), 'signed' (il file usa gia' il segno
+    # giusto, non toccare nulla).
+    try:
+        _execute("ALTER TABLE accounts ADD COLUMN amount_sign_mode TEXT NOT NULL DEFAULT 'auto'")
+    except sqlite3.OperationalError:
+        pass
+
+    # Data valuta (accredito/disponibilita' dei fondi), distinta dalla data
+    # operazione gia' in 'date': serve a riconoscere meglio i doppioni quando
+    # la stessa spesa arriva da fonti diverse con date leggermente diverse
+    # (es. scontrino scansionato il giorno dell'acquisto vs. estratto conto
+    # che riporta anche la valuta) - vedi GET /api/transactions/duplicates.
+    try:
+        _execute('ALTER TABLE transactions ADD COLUMN value_date TEXT')
     except sqlite3.OperationalError:
         pass
 

@@ -15,6 +15,16 @@
       "infoLine1": "La chiave AI (OpenAI/Anthropic) si configura in <strong>Impostazioni → Add-on → CasaSpese → Configurazione</strong> in Home Assistant.",
       "infoLine2": "Senza chiave AI configurata, la categorizzazione e l'import PDF provano comunque il task AI di Home Assistant, se presente."
     },
+    "privacy": {
+      "title": "Privacy e visibilità",
+      "levelLabel": "Livello di segregazione dati personali",
+      "levels": {
+        "segregated": "Segregato (default) — conti/spese personali visibili solo al proprietario, salvo eccezioni per conto",
+        "accountsOnly": "Solo conti — tutti vedono che un conto personale esiste, ma non le sue transazioni",
+        "open": "Aperto — tutti vedono tutto, nessuna segregazione"
+      },
+      "hint": "Le eccezioni per singolo conto (\"Visibile anche a\" in Conti bancari) restano valide con i livelli Segregato e Solo conti — con Aperto la segregazione è disattivata del tutto e quelle eccezioni non servono più."
+    },
     "maintenance": {
       "title": "Manutenzione",
       "hint": "Se vedi persone o conti vuoti/duplicati nelle pagine Anagrafiche, usa questo pulsante per eliminarli.",

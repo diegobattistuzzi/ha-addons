@@ -31,6 +31,7 @@
         <RouterLink to="/dashboard"    class="nav-item"><span>▦</span>{{ t('app.nav.dashboard') }}</RouterLink>
         <RouterLink to="/transactions" class="nav-item"><span>↕</span>{{ t('app.nav.transactions') }}</RouterLink>
         <RouterLink to="/reports"      class="nav-item"><span>◈</span>{{ t('app.nav.reports') }}</RouterLink>
+        <RouterLink to="/assistant"    class="nav-item"><span>✨</span>{{ t('app.nav.assistant') }}</RouterLink>
         <RouterLink to="/balance"      class="nav-item"><span>⚖</span>{{ t('app.nav.balance') }}</RouterLink>
         <RouterLink to="/documenti"    class="nav-item"><span>📄</span>{{ t('app.nav.documents') }}</RouterLink>
         <RouterLink to="/email"        class="nav-item"><span>📧</span>{{ t('app.nav.email') }}</RouterLink>
@@ -38,6 +39,7 @@
         <RouterLink to="/persons"      class="nav-item"><span>◉</span>{{ t('app.nav.persons') }}</RouterLink>
         <RouterLink to="/accounts"     class="nav-item"><span>▣</span>{{ t('app.nav.accounts') }}</RouterLink>
         <RouterLink to="/categories"   class="nav-item"><span>◑</span>{{ t('app.nav.categories') }}</RouterLink>
+        <RouterLink to="/rules"       class="nav-item"><span>⚙</span>{{ t('app.nav.rules') }}</RouterLink>
         <div class="nav-label" style="margin-top:16px">{{ t('app.navConfig') }}</div>
         <RouterLink to="/setup"    class="nav-item"><span>✦</span>{{ t('app.nav.setup') }}</RouterLink>
         <RouterLink to="/guida"    class="nav-item"><span>❓</span>{{ t('app.nav.guida') }}</RouterLink>
@@ -56,7 +58,7 @@
           >{{ l.toUpperCase() }}</button>
         </span>
         <span>{{ month }}</span>
-        <span style="color:rgba(255,255,255,.3)">v1.0.0</span>
+        <span style="color:rgba(255,255,255,.3)">v{{ appVersion }}</span>
       </div>
     </aside>
     <main class="main-area">
@@ -79,6 +81,7 @@ import IdentityPicker from './components/IdentityPicker.vue'
 const { t, locale } = useI18n()
 const locales = SUPPORTED_LOCALES
 const route = useRoute()
+const appVersion = __APP_VERSION__
 
 // Le route /mobile/* sono la PWA installata sul telefono (vedi Persons.vue
 // "Genera accesso mobile"): niente sidebar fissa da 220px pensata per

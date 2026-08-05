@@ -59,7 +59,13 @@ def _decode_header_value(raw: Optional[str]) -> str:
     decoded = []
     for text, charset in parts:
         if isinstance(text, bytes):
-            decoded.append(text.decode(charset or 'utf-8', errors='replace'))
+            try:
+                decoded.append(text.decode(charset or 'utf-8', errors='replace'))
+            except LookupError:
+                # charset dichiarato dal mittente (es. 'unknown-8bit') non e' un
+                # codec valido per Python: nessun encoding sarebbe corretto,
+                # meglio un fallback leggibile che un 500 che blocca l'intero poll.
+                decoded.append(text.decode('utf-8', errors='replace'))
         else:
             decoded.append(text)
     return ''.join(decoded)
@@ -107,7 +113,10 @@ def _extract_body(msg) -> str:
     if payload is None:
         return ''
     charset = msg.get_content_charset() or 'utf-8'
-    text = payload.decode(charset, errors='replace')
+    try:
+        text = payload.decode(charset, errors='replace')
+    except (LookupError, ValueError):
+        text = payload.decode('utf-8', errors='replace')
     return _html_to_text(text) if msg.get_content_type() == 'text/html' else text
 
 

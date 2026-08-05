@@ -1,0 +1,37 @@
+{
+  "assistant": {
+    "title": "Assistente AI",
+    "tabs": {
+      "summary": "Riepilogo",
+      "chat": "Chat"
+    },
+    "summary": {
+      "title": "Riepilogo del mese",
+      "generate": "Genera analisi",
+      "generating": "Generazione in corso…",
+      "empty": "Premi \"Genera analisi\" per ottenere un riepilogo scritto dall'AI sul mese selezionato."
+    },
+    "anomalies": {
+      "title": "Anomalie",
+      "empty": "Premi \"Genera analisi\" per verificare la presenza di spese anomale nel mese selezionato.",
+      "none": "Nessuna anomalia rilevata per questo mese.",
+      "categorySpike": "Spesa insolitamente alta nella categoria {category}.",
+      "newMerchant": "Nuovo esercente non visto di recente: {merchant}."
+    },
+    "chat": {
+      "newConversation": "Nuova conversazione",
+      "noConversations": "Nessuna conversazione salvata.",
+      "empty": "Fai una domanda sulle tue finanze, ad esempio \"Quanto ho speso in ristoranti questo mese?\"",
+      "placeholder": "Scrivi una domanda…",
+      "send": "Invia",
+      "thinking": "Sto elaborando la risposta…",
+      "chartPreview": "Grafico della domanda",
+      "saveAsReport": "Salva come report",
+      "savedConfirmation": "Report salvato: lo trovi anche in Report > Personalizzato.",
+      "confirmDelete": "Eliminare questa conversazione?"
+    },
+    "errors": {
+      "generic": "Si è verificato un errore. Verifica che l'AI sia configurata correttamente e riprova."
+    }
+  }
+}

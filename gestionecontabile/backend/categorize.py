@@ -51,6 +51,50 @@ def _keyword_match(text: str, categories: List[Dict[str, Any]]) -> Optional[int]
     return None
 
 
+def _rule_matches(rule: Dict[str, Any], text: str, amount: float) -> bool:
+    if rule['sign'] == 'negative' and amount >= 0:
+        return False
+    if rule['sign'] == 'positive' and amount <= 0:
+        return False
+    if rule['is_regex']:
+        try:
+            return re.search(rule['pattern'], text, re.IGNORECASE) is not None
+        except re.error:
+            return False
+    return rule['pattern'].lower() in text
+
+
+def _apply_rule(tx_id: int, rule: Dict[str, Any]) -> None:
+    """Applica una regola utente (vedi import_rules): a differenza del
+    keyword/AI match sotto, conferma subito la transazione (is_confirmed=1) e
+    puo' impostare anche destinazione/persona, non solo la categoria - e' una
+    scelta esplicita dell'utente, non un suggerimento da rivedere."""
+    fields = ['category_id = ?', 'is_confirmed = 1']
+    args: List[Any] = [rule['category_id']]
+    if rule.get('destination'):
+        fields.append('destination = ?')
+        args.append(rule['destination'])
+        if rule['destination'] == 'split':
+            if rule.get('split_person_id'):
+                fields.append('split_person_id = ?')
+                args.append(rule['split_person_id'])
+            if rule.get('split_ratio') is not None:
+                fields.append('split_ratio = ?')
+                args.append(rule['split_ratio'])
+    if rule.get('paid_by_person_id'):
+        fields.append('paid_by_person_id = ?')
+        args.append(rule['paid_by_person_id'])
+    args.append(tx_id)
+    db.conn.execute(f"UPDATE transactions SET {', '.join(fields)} WHERE id = ?", tuple(args))
+
+
+def _load_rules() -> List[Dict[str, Any]]:
+    """Regole attive, valutate in ordine di priorita' decrescente (a parita'
+    di priorita', le piu' vecchie prima): la prima che matcha vince, le
+    successive non vengono nemmeno provate."""
+    return _fetchall('SELECT * FROM import_rules WHERE is_active = 1 ORDER BY priority DESC, id ASC')
+
+
 def _build_ai_prompt(pending: List[Dict[str, Any]], categories: List[Dict[str, Any]]) -> str:
     cats_text = '\n'.join(f"- id={c['id']}: {c['name']}" for c in categories)
     txs_text = '\n'.join(f"- id={t['id']}: {t['description']}" for t in pending)
@@ -77,7 +121,7 @@ def categorize_batch(batch_id: str) -> int:
     """Categorizza le transazioni appena importate (stesso import_batch_id).
     Vedi _categorize_rows per la logica di categorizzazione vera e propria."""
     transactions = _fetchall(
-        'SELECT id, description_raw, merchant_name FROM transactions '
+        'SELECT id, description_raw, merchant_name, amount FROM transactions '
         'WHERE import_batch_id = ? AND category_id IS NULL AND ai_category_id IS NULL',
         (batch_id,),
     )
@@ -97,7 +141,7 @@ def categorize_selected(ids: List[int]) -> Dict[str, int]:
         return {'categorized': 0, 'skipped': 0}
     placeholders = ','.join('?' * len(ids))
     transactions = _fetchall(
-        f'SELECT id, description_raw, merchant_name FROM transactions '
+        f'SELECT id, description_raw, merchant_name, amount FROM transactions '
         f'WHERE id IN ({placeholders}) AND category_id IS NULL AND ai_category_id IS NULL',
         tuple(ids),
     )
@@ -120,6 +164,7 @@ def _categorize_rows(transactions: List[Dict[str, Any]]) -> int:
     if not transactions:
         return 0
 
+    rules = _load_rules()
     categories = [
         {'id': c['id'], 'name': c['name'], 'keywords': _load_keywords(c['ai_keywords'])}
         for c in _fetchall("SELECT id, name, ai_keywords FROM categories WHERE is_active = 1 AND type != 'transfer'")
@@ -135,6 +180,12 @@ def _categorize_rows(transactions: List[Dict[str, Any]]) -> int:
     remaining = []
     for tx in transactions:
         text = f"{tx['description_raw'] or ''} {tx['merchant_name'] or ''}".lower()
+        amount = tx.get('amount') or 0
+        matched_rule = next((r for r in rules if _rule_matches(r, text, amount)), None)
+        if matched_rule is not None:
+            _apply_rule(tx['id'], matched_rule)
+            categorized += 1
+            continue
         if transfer_category_id is not None and own_ibans and _own_account_iban_match(text, own_ibans):
             db.conn.execute(
                 'UPDATE transactions SET ai_category_id = ?, ai_confidence = ? WHERE id = ?',

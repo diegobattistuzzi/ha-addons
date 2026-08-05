@@ -6,7 +6,21 @@
     },
     "actions": {
       "manualAdd": "+ Inserisci",
-      "importBank": "↑ Importa estratto"
+      "importBank": "↑ Importa estratto",
+      "findDuplicates": "🔎 Trova duplicati",
+      "export": "↓ Esporta"
+    },
+    "duplicates": {
+      "title": "Possibili transazioni duplicate",
+      "empty": "Nessun possibile duplicato trovato.",
+      "similarity": "≈{pct}% simili",
+      "deleteThis": "Elimina questa",
+      "selected": "✓ Selezionata",
+      "notDuplicate": "Non è un duplicato",
+      "loadError": "Errore durante la ricerca dei duplicati",
+      "confirm": "Conferma ({count})",
+      "confirmApply": "Applicare le scelte su {count} coppie di duplicati?",
+      "applyError": "Errore durante l'applicazione delle scelte"
     },
     "aiQuickAdd": {
       "placeholder": "✨ Es: 23€ pizza ieri sera con amex",
@@ -36,6 +50,10 @@
       "statusConfirmed": "Confermate",
       "filterBtn": "Filtra"
     },
+    "pagination": {
+      "perPage": "Righe per pagina:",
+      "pageOf": "Pagina {page} di {totalPages}"
+    },
     "destination": {
       "family": "Famiglia",
       "personal": "Personale",
@@ -54,6 +72,7 @@
       "confirm": "✓ Conferma",
       "rejectAi": "✕ Rifiuta suggerimento AI",
       "categorizeAi": "✦ Riconosci categoria (AI)",
+      "flipSign": "± Inverti segno",
       "delete": "🗑 Elimina",
       "deselect": "Deseleziona"
     },
@@ -62,7 +81,8 @@
         "transaction": "Transazione",
         "dest": "Dest.",
         "from": "Da",
-        "account": "Conto"
+        "account": "Conto",
+        "runningBalance": "Progressivo"
       },
       "checkBackend": "Controlla che il backend sia avviato e premi F5 per riprovare.",
       "empty": "Nessuna transazione.",
@@ -70,11 +90,13 @@
     },
     "row": {
       "openSourceStatement": "Apri estratto conto di origine",
+      "valueDateTitle": "Data valuta: {date}",
       "attachmentsTitle": "{count} allegato/i",
       "goToMatchedEmail": "Vai alla mail abbinata",
       "clickToChangeCategory": "Clicca per cambiare categoria",
       "confirmAiCategory": "Conferma la categoria proposta dall'AI così com'è",
       "clickToChangeDest": "Clicca per cambiare destinazione",
+      "createRule": "Crea regola da questa transazione",
       "reimbursedOn": "Rimborsata il {date}",
       "toReimburse": "Da rimborsare dal lavoro: {amount}",
       "reimbDoneBadge": "✓ rimb.",
@@ -85,6 +107,7 @@
       "editTitle": "Modifica transazione",
       "newTitle": "Nuova transazione",
       "dateLabel": "Data *",
+      "valueDateLabel": "Data valuta (opzionale)",
       "amountLabel": "Importo * (negativo = spesa)",
       "descriptionLabel": "Descrizione *",
       "descriptionPlaceholder": "es. Supermercato Esselunga",
@@ -134,6 +157,8 @@
       "aiAnalyzed": "analizzato con AI",
       "aiCategorizedCount": "{count} categorizzate automaticamente, da confermare",
       "duplicatesIgnored": "{count} transazioni ignorate perché già importate in precedenza",
+      "reconciledCount": "{count} spese già inserite a mano riconciliate con l'estratto conto",
+      "reconciledHeader": "Spese esistenti riconciliate con l'estratto conto:",
       "previewHeader": "Anteprima prime transazioni:",
       "importedAsUnconfirmed": "Le transazioni sono state importate come non confermate. Puoi approvarle tutte dal banner in cima, oppure modificarle singolarmente.",
       "transferSuggestionsHeader": "Possibili pagamenti carta di credito rilevati:",
@@ -143,6 +168,7 @@
     },
     "confirms": {
       "bulkDelete": "Eliminare definitivamente {count} transazioni selezionate?",
+      "bulkFlipSign": "Invertire il segno di {count} transazioni selezionate?",
       "removeAttachment": "Rimuovere l'allegato \"{filename}\"?",
       "deleteTx": "Eliminare \"{name}\"?"
     },
@@ -154,6 +180,7 @@
       "categorizeAiFailed": "Errore riconoscimento categoria AI",
       "noCategorySuggested": "Nessuna categoria suggerita: le transazioni selezionate hanno già una categoria o un suggerimento in attesa di conferma.",
       "deleteFailed": "Errore eliminazione",
+      "flipSignFailed": "Errore inversione segno",
       "aiParseFailed": "Errore analisi AI",
       "uploadAttachmentFailed": "Errore caricamento allegato",
       "removeAttachmentFailed": "Errore rimozione allegato",

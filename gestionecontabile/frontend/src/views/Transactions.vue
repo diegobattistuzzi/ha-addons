@@ -7,7 +7,11 @@
         <div class="topbar-meta">{{ t('transactions.topbar.count', { count: total }) }}</div>
       </div>
       <div class="topbar-actions">
+        <button class="btn btn-sm" @click="openDuplicates" :disabled="duplicatesLoading">
+          {{ duplicatesLoading ? '...' : t('transactions.actions.findDuplicates') }}
+        </button>
         <button class="btn btn-sm" @click="openManual">{{ t('transactions.actions.manualAdd') }}</button>
+        <button class="btn btn-sm" @click="exportCsv">{{ t('transactions.actions.export') }}</button>
         <button class="btn btn-primary btn-sm" @click="showImport = true">{{ t('transactions.actions.importBank') }}</button>
       </div>
     </div>
@@ -27,14 +31,14 @@
       <!-- Banner AI pendenti -->
       <div v-if="pendingAI.length" class="ai-banner">
         <span>✦ <strong>{{ pendingAI.length }}</strong> {{ t('transactions.aiBanner.text') }}</span>
-        <button class="btn btn-sm" @click="filterConfirmed = 'pending'; load()">{{ t('transactions.aiBanner.show') }}</button>
+        <button class="btn btn-sm" @click="filterConfirmed = 'pending'; page = 1; load()">{{ t('transactions.aiBanner.show') }}</button>
         <button class="btn btn-sm btn-teal" @click="confirmAll">{{ t('transactions.aiBanner.approveAll') }}</button>
       </div>
 
       <!-- Banner rimborsi lavoro in attesa -->
       <div v-if="totalPendingReimbursement > 0" class="reimb-banner">
         <span>💶 <strong>{{ fmt(totalPendingReimbursement) }}</strong> {{ t('transactions.reimbBanner.text') }}</span>
-        <button class="btn btn-sm" @click="filterReimb = 'pending'; load()">{{ t('transactions.reimbBanner.show') }}</button>
+        <button class="btn btn-sm" @click="filterReimb = 'pending'; page = 1; load()">{{ t('transactions.reimbBanner.show') }}</button>
       </div>
 
       <!-- Filtri -->
@@ -66,7 +70,7 @@
           <option value="confirmed">{{ t('transactions.filters.statusConfirmed') }}</option>
         </select>
         <input class="input filter-input" type="month" v-model="filterMonth" />
-        <button class="btn btn-sm" @click="load">{{ t('transactions.filters.filterBtn') }}</button>
+        <button class="btn btn-sm" @click="page = 1; load()">{{ t('transactions.filters.filterBtn') }}</button>
       </div>
 
       <!-- Barra azioni di gruppo -->
@@ -99,13 +103,14 @@
         <button class="btn btn-sm" @click="bulkConfirm" :disabled="bulkApplying">{{ t('transactions.bulkBar.confirm') }}</button>
         <button class="btn btn-sm" @click="bulkRejectAi" :disabled="bulkApplying">{{ t('transactions.bulkBar.rejectAi') }}</button>
         <button class="btn btn-sm" @click="bulkCategorizeAi" :disabled="bulkApplying">{{ t('transactions.bulkBar.categorizeAi') }}</button>
+        <button class="btn btn-sm" @click="bulkFlipSign" :disabled="bulkApplying">{{ t('transactions.bulkBar.flipSign') }}</button>
         <button class="btn btn-sm btn-danger" @click="bulkDelete" :disabled="bulkApplying">{{ t('transactions.bulkBar.delete') }}</button>
         <button class="btn btn-sm" @click="clearSelection">{{ t('transactions.bulkBar.deselect') }}</button>
       </div>
 
       <!-- Lista -->
       <div class="tx-list">
-        <div class="tx-header">
+        <div class="tx-header" :class="{ 'with-balance': showRunningBalance }">
           <div><input type="checkbox" :checked="allSelected" @change="toggleSelectAll" /></div>
           <div></div>
           <div class="sortable" @click="toggleSort('date')">{{ t('common.date') }}<span v-if="sortKey==='date'" class="sort-arrow">{{ sortDir === 'asc' ? '↑' : '↓' }}</span></div>
@@ -115,6 +120,7 @@
           <div>{{ t('transactions.list.header.from') }}</div>
           <div class="sortable" @click="toggleSort('amount')">{{ t('common.amount') }}<span v-if="sortKey==='amount'" class="sort-arrow">{{ sortDir === 'asc' ? '↑' : '↓' }}</span></div>
           <div>{{ t('transactions.list.header.account') }}</div>
+          <div v-if="showRunningBalance">{{ t('transactions.list.header.runningBalance') }}</div>
           <div></div>
         </div>
         <div v-if="loading" class="empty">{{ t('common.loading') }}</div>
@@ -126,15 +132,17 @@
           {{ t('transactions.list.empty') }}
           <span v-if="!transactions.length"> {{ t('transactions.list.emptyHint') }}</span>
         </div>
-        <div v-for="tx in filtered" :key="tx.id" class="tx-row" :class="{ pending: !tx.is_confirmed }">
+        <div v-for="tx in filtered" :key="tx.id" class="tx-row" :class="{ pending: !tx.is_confirmed, 'with-balance': showRunningBalance }">
           <div><input type="checkbox" :checked="selectedIds.has(tx.id)" @change="toggleSelect(tx.id)" /></div>
           <div class="tx-icon">{{ categoryIcon(tx.category_id) }}</div>
-          <div class="tx-date">{{ tx.date }}</div>
+          <div class="tx-date" :title="tx.value_date ? t('transactions.row.valueDateTitle', { date: tx.value_date }) : ''">
+            {{ tx.date }}<span v-if="tx.value_date" class="tx-value-date"> ({{ tx.value_date }})</span>
+          </div>
           <div>
             <div class="tx-name">{{ tx.merchant_name || tx.description_raw || '—' }}</div>
             <div v-if="tx.notes" class="tx-desc">{{ tx.notes }}</div>
             <div v-if="tx.document_id || tx.attachment_count || tx.email_receipt_id" class="tx-links">
-              <a v-if="tx.document_id" :href="downloadUrl(tx.document_id)" target="_blank" class="tx-link" :title="t('transactions.row.openSourceStatement')">📄</a>
+              <button v-if="tx.document_id" class="tx-link" @click="download(tx.document_id)" :title="t('transactions.row.openSourceStatement')">📄</button>
               <button v-if="tx.attachment_count" class="tx-link" @click="editTx(tx)" :title="t('transactions.row.attachmentsTitle', { count: tx.attachment_count })">📎 {{ tx.attachment_count }}</button>
               <RouterLink v-if="tx.email_receipt_id" :to="`/email?highlight=${tx.email_receipt_id}`" class="tx-link" :title="t('transactions.row.goToMatchedEmail')">✉</RouterLink>
             </div>
@@ -177,14 +185,33 @@
           <div class="tx-person">{{ personName(tx.paid_by_person_id) }}</div>
           <div class="tx-amount num" :class="tx.amount < 0 ? 'neg' : 'pos'">{{ fmt(tx.amount) }}</div>
           <div class="tx-acc">{{ accountName(tx.account_id) }}</div>
+          <div v-if="showRunningBalance" class="tx-balance num">{{ runningBalances[tx.id] != null ? fmt(runningBalances[tx.id]) : '—' }}</div>
           <div class="tx-actions">
             <button v-if="tx.is_reimbursable" class="btn-icon" @click="toggleReimbursed(tx)"
               :title="tx.reimbursed_at ? t('transactions.row.reopenTitle') : t('transactions.row.markReimbursedTitle')">
               {{ tx.reimbursed_at ? '↺' : '✓' }}
             </button>
+            <button class="btn-icon" @click="createRuleFromTx(tx)" :title="t('transactions.row.createRule')">⚙</button>
             <button class="btn-icon" @click="editTx(tx)" :title="t('common.edit')">✎</button>
             <button class="btn-icon danger" @click="deleteTx(tx)" :title="t('common.delete')">✕</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Paginazione -->
+      <div class="pagination-bar">
+        <label class="pagination-size">
+          {{ t('transactions.pagination.perPage') }}
+          <select class="input input-sm" v-model.number="pageSize" @change="onPageSizeChange">
+            <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }}</option>
+          </select>
+        </label>
+        <div class="pagination-nav">
+          <button class="btn btn-sm" :disabled="page <= 1" @click="goToPage(1)">«</button>
+          <button class="btn btn-sm" :disabled="page <= 1" @click="goToPage(page - 1)">‹</button>
+          <span class="pagination-info">{{ t('transactions.pagination.pageOf', { page, totalPages }) }}</span>
+          <button class="btn btn-sm" :disabled="page >= totalPages" @click="goToPage(page + 1)">›</button>
+          <button class="btn btn-sm" :disabled="page >= totalPages" @click="goToPage(totalPages)">»</button>
         </div>
       </div>
 
@@ -206,6 +233,12 @@
             <div class="form-group">
               <label class="label">{{ t('transactions.manualModal.amountLabel') }}</label>
               <input class="input" type="number" step="0.01" v-model="form.amount" placeholder="-42.50" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">{{ t('transactions.manualModal.valueDateLabel') }}</label>
+              <input class="input" type="date" v-model="form.valueDate" />
             </div>
           </div>
           <div class="form-group">
@@ -277,7 +310,7 @@
             <label class="label">{{ t('transactions.manualModal.attachmentsLabel') }}</label>
             <div v-if="txAttachments.length" class="attachment-list">
               <div v-for="d in txAttachments" :key="d.id" class="attachment-row">
-                <a :href="downloadUrl(d.id)" target="_blank" class="attachment-name">📎 {{ d.filename }}</a>
+                <button class="attachment-name" @click="download(d.id, d.filename)">📎 {{ d.filename }}</button>
                 <button class="btn-icon danger" @click="deleteAttachment(d)" :title="t('transactions.manualModal.removeAttachmentTitle')">✕</button>
               </div>
             </div>
@@ -380,11 +413,23 @@
               <div v-if="!importResult.error && importResult.duplicates" class="result-sub">
                 ↩️ {{ t('transactions.importModal.duplicatesIgnored', { count: importResult.duplicates }) }}
               </div>
+              <div v-if="!importResult.error && importResult.reconciled" class="result-sub">
+                🔗 {{ t('transactions.importModal.reconciledCount', { count: importResult.reconciled }) }}
+              </div>
             </div>
           </div>
 
           <div v-if="importResult.signWarning" class="warning-box">⚠️ {{ importResult.signWarning }}</div>
           <div v-if="importResult.reconciliationWarning" class="warning-box">⚠️ {{ importResult.reconciliationWarning }}</div>
+
+          <div v-if="importResult.reconciledTransactions?.length" class="transfer-suggestions">
+            <div class="preview-header">🔗 {{ t('transactions.importModal.reconciledHeader') }}</div>
+            <div v-for="r in importResult.reconciledTransactions" :key="r.transactionId" class="suggestion-row">
+              <span class="preview-date">{{ r.date }}</span>
+              <span class="preview-desc">{{ r.description || '—' }}</span>
+              <span class="preview-amount" :class="r.amount < 0 ? 'neg' : 'pos'">{{ fmtPreview(r.amount) }}</span>
+            </div>
+          </div>
 
           <div v-if="!importResult.error && importResult.preview?.length" class="preview-list">
             <div class="preview-header">{{ t('transactions.importModal.previewHeader') }}</div>
@@ -422,15 +467,71 @@
       </div>
     </div>
 
+    <!-- Modal duplicati -->
+    <div v-if="showDuplicates" class="modal-backdrop" @click.self="showDuplicates=false">
+      <div class="modal modal-import">
+        <div class="modal-header">
+          <span>{{ t('transactions.duplicates.title') }}</span>
+          <button class="btn-icon" @click="showDuplicates=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="!duplicatePairs.length" class="empty">{{ t('transactions.duplicates.empty') }}</div>
+          <div v-else class="dup-list">
+            <div v-for="pair in duplicatePairs" :key="`${pair.a.id}-${pair.b.id}`" class="dup-pair">
+              <div class="dup-similarity">{{ t('transactions.duplicates.similarity', { pct: Math.round(pair.similarity * 100) }) }}</div>
+              <div class="dup-cols">
+                <div class="dup-col" :class="{ selected: pair.decision === 'a' }">
+                  <div class="dup-date">{{ pair.a.date }}<span v-if="pair.a.value_date"> ({{ pair.a.value_date }})</span></div>
+                  <div class="dup-desc">{{ pair.a.merchant_name || pair.a.description_raw || '—' }}</div>
+                  <div class="dup-amount num" :class="pair.a.amount < 0 ? 'neg' : 'pos'">{{ fmt(pair.a.amount) }}</div>
+                  <div class="dup-acc">{{ accountName(pair.a.account_id) }}</div>
+                  <button class="btn btn-sm" :class="pair.decision === 'a' ? 'btn-primary' : 'btn-danger'" @click="toggleDecision(pair, 'a')">
+                    {{ pair.decision === 'a' ? t('transactions.duplicates.selected') : t('transactions.duplicates.deleteThis') }}
+                  </button>
+                </div>
+                <div class="dup-col" :class="{ selected: pair.decision === 'b' }">
+                  <div class="dup-date">{{ pair.b.date }}<span v-if="pair.b.value_date"> ({{ pair.b.value_date }})</span></div>
+                  <div class="dup-desc">{{ pair.b.merchant_name || pair.b.description_raw || '—' }}</div>
+                  <div class="dup-amount num" :class="pair.b.amount < 0 ? 'neg' : 'pos'">{{ fmt(pair.b.amount) }}</div>
+                  <div class="dup-acc">{{ accountName(pair.b.account_id) }}</div>
+                  <button class="btn btn-sm" :class="pair.decision === 'b' ? 'btn-primary' : 'btn-danger'" @click="toggleDecision(pair, 'b')">
+                    {{ pair.decision === 'b' ? t('transactions.duplicates.selected') : t('transactions.duplicates.deleteThis') }}
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-sm dup-dismiss" :class="{ 'btn-primary': pair.decision === 'dismiss' }" @click="toggleDecision(pair, 'dismiss')">
+                {{ pair.decision === 'dismiss' ? t('transactions.duplicates.selected') : t('transactions.duplicates.notDuplicate') }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" @click="showDuplicates=false">{{ t('common.close') }}</button>
+          <button class="btn btn-primary" :disabled="!pendingDuplicateCount || applyingDuplicates" @click="applyDuplicateDecisions">
+            {{ applyingDuplicates ? '...' : t('transactions.duplicates.confirm', { count: pendingDuplicateCount }) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <RuleFormModal v-if="showRuleModal"
+      :initial-rule="ruleDraft"
+      :categories="activeCategories"
+      :persons="persons"
+      @saved="showRuleModal = false"
+      @close="showRuleModal = false"
+    />
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { api } from '../api.js'
+import { api, downloadFile } from '../api.js'
 import { getPersonId } from '../identity.js'
 import CategoryPicker from '../components/CategoryPicker.vue'
+import RuleFormModal from '../components/RuleFormModal.vue'
 import { sortCategoriesAsTree } from '../utils/categoryTree.js'
 
 const { t } = useI18n()
@@ -443,6 +544,31 @@ const persons        = ref([])
 const loading        = ref(true)
 const loadError      = ref('')
 const total          = ref(0)
+const pendingReimbursementTotal = ref(0)
+
+// paginazione lato server: la pagina caricava fino a 2000 righe in un colpo
+// solo, rendendo la vista lentissima con molte transazioni. Ora si scarica
+// solo la pagina corrente (limit/offset), col conteggio totale letto
+// dall'header X-Total-Count restituito dal backend.
+const page     = ref(1)
+const pageSize = ref(100)
+const pageSizeOptions = [50, 100, 200, 500]
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+function goToPage(p) {
+  const clamped = Math.min(Math.max(1, p), totalPages.value)
+  if (clamped === page.value) return
+  page.value = clamped
+  load()
+}
+function onPageSizeChange() {
+  page.value = 1
+  load()
+}
+let searchDebounce = null
+watch(filterText, () => {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => { page.value = 1; load() }, 400)
+})
 
 // selezione multipla / azioni di gruppo
 const selectedIds  = ref(new Set())
@@ -479,6 +605,24 @@ const filterReimb   = ref('')
 const filterConfirmed = ref('')
 const filterMonth   = ref('')
 
+// Saldo progressivo (colonna visibile solo filtrando su un conto solo): mappa
+// transactionId -> saldo del conto subito dopo quella transazione, calcolata
+// dal backend sull'intero storico del conto (vedi account_running_balances),
+// cosi' resta corretta anche se altri filtri (categoria, testo, ...) nascondono
+// movimenti intermedi nella lista visibile.
+const runningBalances = ref({})
+const showRunningBalance = computed(() => !!filterAccount.value)
+async function loadRunningBalances() {
+  if (!filterAccount.value) { runningBalances.value = {}; return }
+  try {
+    const { data } = await api.get(`api/accounts/${filterAccount.value}/running-balances`)
+    runningBalances.value = data
+  } catch {
+    runningBalances.value = {}
+  }
+}
+watch(filterAccount, loadRunningBalances, { immediate: true })
+
 // modifica inline della categoria direttamente in lista (senza aprire il modal)
 const inlineCategoryId = ref(null)
 const inlineDestId = ref(null)
@@ -489,11 +633,34 @@ const editMode    = ref(false)
 const saving      = ref(false)
 const formError   = ref('')
 
+const showRuleModal = ref(false)
+const ruleDraft      = ref(null)
+
+// Preriempie una bozza di regola dalla transazione cliccata (causale come
+// pattern, segno dell'importo, categoria/destinazione/persona correnti): apre
+// solo il modale, non crea nulla finche' l'utente non conferma dal form.
+function createRuleFromTx(tx) {
+  ruleDraft.value = {
+    pattern: tx.merchant_name || tx.description_raw || '',
+    isRegex: false,
+    sign: tx.amount < 0 ? 'negative' : 'positive',
+    categoryId: tx.category_id ?? tx.ai_category_id ?? '',
+    destination: tx.destination || '',
+    paidByPersonId: tx.paid_by_person_id || '',
+    splitPersonId: tx.split_person_id || '',
+    splitRatio: tx.split_ratio,
+    priority: 0,
+    isActive: true,
+  }
+  showRuleModal.value = true
+}
+
 const txAttachments      = ref([])
 const attachmentUploading = ref(false)
 
 const emptyForm = () => ({
   date: new Date().toISOString().slice(0,10),
+  valueDate: '',
   amount: '',
   description: '',
   accountId: '',
@@ -512,14 +679,10 @@ const form = ref(emptyForm())
 
 // ── Computed ──────────────────────────────────────────
 const filtered = computed(() => {
+  // Nota: month/account/category/dest/reimb/confirmed/search sono gia'
+  // applicati lato server in load(); questi filtri client-side restano solo
+  // come sicurezza aggiuntiva sulla pagina corrente, non su tutto il dataset.
   let list = transactions.value
-  if (filterText.value) {
-    const q = filterText.value.toLowerCase()
-    list = list.filter(t =>
-      (t.merchant_name || '').toLowerCase().includes(q) ||
-      (t.description_raw || '').toLowerCase().includes(q)
-    )
-  }
   if (filterAccount.value) list = list.filter(t => t.account_id === Number(filterAccount.value))
   if (filterCategory.value) list = list.filter(t => t.category_id === Number(filterCategory.value))
   if (filterDest.value) {
@@ -563,11 +726,10 @@ function categoryOptionsFor(tx) {
 
 const reimbursementAmountOf = t => t.reimbursement_amount != null ? t.reimbursement_amount : Math.abs(t.amount)
 
-const totalPendingReimbursement = computed(() =>
-  transactions.value
-    .filter(t => t.is_reimbursable && !t.reimbursed_at)
-    .reduce((sum, t) => sum + reimbursementAmountOf(t), 0)
-)
+// Non puo' piu' essere derivato da transactions.value (ora e' solo la pagina
+// corrente): caricato a parte in load() sull'intero insieme dei rimborsi
+// ancora da saldare, che resta comunque un sottoinsieme piccolo.
+const totalPendingReimbursement = computed(() => pendingReimbursementTotal.value)
 
 const importAccount = computed(() => accounts.value.find(a => a.id === Number(importAccountId.value)))
 const importAccountOwnership = computed(() => importAccount.value?.ownership || '')
@@ -580,6 +742,41 @@ const categoryIcon = id => categories.value.find(c => c.id === id)?.icon || '�
 const accountName  = id => accounts.value.find(a => a.id === id)?.name || '—'
 const personName   = id => persons.value.find(p => p.id === id)?.name || ''
 const destLabel    = d => ({ family: t('transactions.destination.family'), personal: t('transactions.destination.personal'), split: t('transactions.destination.split') }[d] || d)
+
+// Esporta esattamente le righe visibili in tabella (con i filtri correnti
+// gia' applicati) in CSV: usa ';' come separatore e virgola per i decimali
+// perche' e' cosi' che Excel in locale italiano interpreta un CSV senza
+// dover passare dall'importazione guidata. Il BOM UTF-8 iniziale serve a far
+// riconoscere a Excel la codifica ed evitare caratteri accentati rotti.
+function exportCsv() {
+  const headers = [
+    t('common.date'), t('transactions.list.header.transaction'), t('common.category'),
+    t('transactions.list.header.dest'), t('transactions.list.header.from'), t('common.amount'),
+    t('transactions.list.header.account'),
+  ]
+  const rows = filtered.value.map(tx => [
+    tx.date,
+    tx.merchant_name || tx.description_raw || '',
+    categoryName(tx.category_id ?? tx.ai_category_id) || '',
+    destLabel(tx.destination),
+    personName(tx.paid_by_person_id),
+    String(tx.amount).replace('.', ','),
+    accountName(tx.account_id),
+  ])
+  const escape = v => {
+    const s = String(v ?? '')
+    return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const bom = String.fromCharCode(0xFEFF)
+  const csv = bom + [headers, ...rows].map(r => r.map(escape).join(';')).join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `transazioni_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 // Un conto personale segrega le sue spese: cambiando conto, la destinazione e
 // l'intestatario si allineano di conseguenza (restano comunque modificabili).
@@ -612,22 +809,30 @@ async function load() {
     if (filterReimb.value)   params.reimbursable = filterReimb.value
     if (filterConfirmed.value === 'pending')   params.unconfirmed = 'true'
     if (filterConfirmed.value === 'confirmed') params.confirmed   = 'true'
+    if (filterText.value)   params.search = filterText.value
 
-    const qs = new URLSearchParams({ ...params, limit: 200 }).toString()
+    const qs = new URLSearchParams({
+      ...params,
+      limit: pageSize.value,
+      offset: (page.value - 1) * pageSize.value,
+    }).toString()
     const safe = p => p.catch(() => ({ data: [] }))
-    const [txRes, catRes, accRes, pendRes, perRes] = await Promise.all([
+    const [txRes, catRes, accRes, pendRes, perRes, reimbRes] = await Promise.all([
       api.get(`api/transactions?${qs}`),
       safe(api.get('api/categories')),
       safe(api.get('api/accounts')),
       safe(api.get('api/transactions/pending-ai')),
       safe(api.get('api/persons')),
+      safe(api.get('api/transactions', { params: { reimbursable: 'pending', limit: 5000 } })),
     ])
     transactions.value = Array.isArray(txRes.data) ? txRes.data : []
-    total.value        = transactions.value.length
-    categories.value   = Array.isArray(catRes.data) ? catRes.data : []
-    accounts.value     = Array.isArray(accRes.data) ? accRes.data : []
-    pendingAI.value    = Array.isArray(pendRes.data) ? pendRes.data : []
-    persons.value      = Array.isArray(perRes.data)  ? perRes.data : []
+    total.value         = Number(txRes.headers?.['x-total-count']) || transactions.value.length
+    categories.value    = Array.isArray(catRes.data) ? catRes.data : []
+    accounts.value      = Array.isArray(accRes.data) ? accRes.data : []
+    pendingAI.value     = Array.isArray(pendRes.data) ? pendRes.data : []
+    persons.value       = Array.isArray(perRes.data)  ? perRes.data : []
+    pendingReimbursementTotal.value = (Array.isArray(reimbRes.data) ? reimbRes.data : [])
+      .reduce((sum, t) => sum + reimbursementAmountOf(t), 0)
   } catch (e) {
     loadError.value = e?.response?.data?.error || e.message || t('transactions.errors.loadFailed')
   } finally {
@@ -726,6 +931,20 @@ async function bulkCategorizeAi() {
   }
 }
 
+async function bulkFlipSign() {
+  if (!confirm(t('transactions.confirms.bulkFlipSign', { count: selectedIds.value.size }))) return
+  bulkApplying.value = true
+  try {
+    await api.post('api/transactions/bulk-flip-sign', { ids: [...selectedIds.value] })
+    clearSelection()
+    load()
+  } catch (e) {
+    alert(e?.response?.data?.error || t('transactions.errors.flipSignFailed'))
+  } finally {
+    bulkApplying.value = false
+  }
+}
+
 async function bulkDelete() {
   if (!confirm(t('transactions.confirms.bulkDelete', { count: selectedIds.value.size }))) return
   bulkApplying.value = true
@@ -787,6 +1006,7 @@ async function aiQuickAdd() {
 function editTx(tx) {
   form.value = {
     date: tx.date,
+    valueDate: tx.value_date || '',
     amount: tx.amount,
     description: tx.merchant_name || tx.description_raw || '',
     accountId: tx.account_id,
@@ -807,8 +1027,8 @@ function editTx(tx) {
   showManual.value = true
 }
 
-function downloadUrl(documentId) {
-  return new URL(`api/documents/${documentId}/download`, document.baseURI).toString()
+function download(documentId, filename) {
+  downloadFile(`api/documents/${documentId}/download`, filename)
 }
 
 async function loadAttachments(txId) {
@@ -933,6 +1153,57 @@ async function deleteTx(tx) {
   if (!confirm(t('transactions.confirms.deleteTx', { name: tx.merchant_name || tx.description_raw }))) return
   await api.delete(`api/transactions/${tx.id}`)
   load()
+}
+
+// ── Duplicati ──────────────────────────────────────────
+const showDuplicates     = ref(false)
+const duplicatesLoading  = ref(false)
+const applyingDuplicates = ref(false)
+const duplicatePairs     = ref([])
+
+const pendingDuplicateCount = computed(() => duplicatePairs.value.filter(p => p.decision).length)
+
+async function openDuplicates() {
+  duplicatesLoading.value = true
+  try {
+    const res = await api.get('api/transactions/duplicates')
+    duplicatePairs.value = (Array.isArray(res.data) ? res.data : []).map(pair => ({ ...pair, decision: null }))
+    showDuplicates.value = true
+  } catch (e) {
+    alert(e?.response?.data?.error || t('transactions.duplicates.loadError'))
+  } finally {
+    duplicatesLoading.value = false
+  }
+}
+
+function toggleDecision(pair, decision) {
+  pair.decision = pair.decision === decision ? null : decision
+}
+
+async function applyDuplicateDecisions() {
+  const pending = duplicatePairs.value.filter(p => p.decision)
+  if (!pending.length) return
+  if (!confirm(t('transactions.duplicates.confirmApply', { count: pending.length }))) return
+  applyingDuplicates.value = true
+  try {
+    for (const pair of pending) {
+      if (pair.decision === 'dismiss') {
+        await api.post('api/transactions/duplicates/dismiss', {
+          transactionIdA: pair.a.id,
+          transactionIdB: pair.b.id,
+        })
+      } else {
+        await api.delete(`api/transactions/${pair[pair.decision].id}`)
+      }
+    }
+    duplicatePairs.value = duplicatePairs.value.filter(p => !p.decision)
+    showDuplicates.value = false
+    load()
+  } catch (e) {
+    alert(e?.response?.data?.error || t('transactions.duplicates.applyError'))
+  } finally {
+    applyingDuplicates.value = false
+  }
 }
 
 // ── Import modal ──────────────────────────────────────
@@ -1119,11 +1390,20 @@ onMounted(load)
 .input { padding:8px 11px; border:1px solid #DDD9D0; background:#F7F6F2; font-size:13px; font-family:inherit; outline:none; }
 .input:focus  { border-color:#1D3557; background:#fff; }
 
+.pagination-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; flex-wrap:wrap; }
+.pagination-size { display:flex; align-items:center; gap:8px; font-size:12px; color:#5C5752; }
+.pagination-nav { display:flex; align-items:center; gap:6px; }
+.pagination-info { font-size:12px; color:#5C5752; padding:0 6px; white-space:nowrap; }
+
 .tx-list { background:#fff; border:1px solid #DDD9D0; }
 .tx-header { display:grid; grid-template-columns:20px 32px 85px 1fr 130px 90px 70px 90px 100px 56px; padding:10px 16px; background:#F0EEE9; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#9A938C; border-bottom:1px solid #DDD9D0; gap:12px; }
+.tx-header.with-balance { grid-template-columns:20px 32px 85px 1fr 130px 90px 70px 90px 100px 100px 56px; }
 .tx-person { font-size:11px; color:#5C5752; font-weight:500; }
 .tx-row    { display:grid; grid-template-columns:20px 32px 85px 1fr 130px 90px 70px 90px 100px 56px; padding:11px 16px; border-bottom:1px solid #DDD9D0; gap:12px; align-items:center; }
+.tx-row.with-balance { grid-template-columns:20px 32px 85px 1fr 130px 90px 70px 90px 100px 100px 56px; }
+.tx-balance { font-size:12px; font-variant-numeric:tabular-nums; color:#5C5752; text-align:right; }
 .tx-date   { font-size:12px; color:#5C5752; font-variant-numeric:tabular-nums; }
+.tx-value-date { color:#9A938C; font-size:11px; }
 .sortable  { cursor:pointer; user-select:none; }
 .sortable:hover { color:#1D3557; }
 .sort-arrow { margin-left:3px; }
@@ -1172,7 +1452,7 @@ onMounted(load)
 .form-error   { font-size:12px; color:#E76F51; flex:1; }
 .attachment-list { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
 .attachment-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; background:#F7F6F2; border:1px solid #DDD9D0; }
-.attachment-name { font-size:12.5px; color:#1D3557; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.attachment-name { font-size:12.5px; color:#1D3557; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:none; border:none; padding:0; cursor:pointer; font-family:inherit; text-align:left; }
 .attachment-name:hover { text-decoration:underline; }
 .attachment-upload { cursor:pointer; display:inline-flex; width:fit-content; }
 
@@ -1217,6 +1497,21 @@ onMounted(load)
 .preview-amount { text-align:right; font-weight:500; font-variant-numeric:tabular-nums; }
 .preview-amount.neg { color:#E76F51; }
 .preview-amount.pos { color:#2A9D8F; }
+
+.dup-list { display:flex; flex-direction:column; gap:14px; }
+.dup-pair { border:1px solid #DDD9D0; padding:12px; }
+.dup-similarity { font-size:11px; color:#9A938C; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+.dup-cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.dup-col { display:flex; flex-direction:column; gap:4px; padding:8px; background:#F7F6F2; border:2px solid transparent; }
+.dup-col.selected { border-color:#E76F51; background:#FCEDE9; }
+.dup-date { font-size:11px; color:#9A938C; font-variant-numeric:tabular-nums; }
+.dup-desc { font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dup-amount { font-size:13px; }
+.dup-amount.neg { color:#E76F51; }
+.dup-amount.pos { color:#2A9D8F; }
+.dup-acc { font-size:11px; color:#9A938C; }
+.dup-col .btn { margin-top:6px; align-self:flex-start; }
+.dup-dismiss { margin-top:10px; width:100%; justify-content:center; }
 .info-box { padding:10px 14px; background:#EBF0F6; border:1px solid #1D3557; font-size:12px; color:#1D3557; line-height:1.6; }
 .warning-box { margin-top:12px; padding:10px 14px; background:#FCF0EC; border:1px solid #E76F51; font-size:12px; color:#8a3a2a; line-height:1.6; }
 
