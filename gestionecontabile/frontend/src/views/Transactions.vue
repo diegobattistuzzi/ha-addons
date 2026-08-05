@@ -564,11 +564,6 @@ function onPageSizeChange() {
   page.value = 1
   load()
 }
-let searchDebounce = null
-watch(filterText, () => {
-  clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(() => { page.value = 1; load() }, 400)
-})
 
 // selezione multipla / azioni di gruppo
 const selectedIds  = ref(new Set())
@@ -604,6 +599,12 @@ const filterDest    = ref('')
 const filterReimb   = ref('')
 const filterConfirmed = ref('')
 const filterMonth   = ref('')
+
+let searchDebounce = null
+watch(filterText, () => {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => { page.value = 1; load() }, 400)
+})
 
 // Saldo progressivo (colonna visibile solo filtrando su un conto solo): mappa
 // transactionId -> saldo del conto subito dopo quella transazione, calcolata
@@ -1110,16 +1111,19 @@ async function toggleReimbursed(tx) {
 }
 
 async function onInlineCategoryChange(tx, value) {
+  // Scegliere/correggere la categoria dal chip in lista non e' un'azione di
+  // conferma esplicita (quella e' il bottone ✓ / "Approva tutte", vedi
+  // confirmAiCategory): forzare isConfirmed:true qui approvava implicitamente
+  // l'intera transazione (destinazione, importo, ecc.) solo perche' l'utente
+  // stava correggendo la categoria suggerita dall'AI.
   const categoryId = value === '' ? null : Number(value)
-  const previous = { category_id: tx.category_id, is_confirmed: tx.is_confirmed }
+  const previous = tx.category_id
   inlineCategoryId.value = null
   tx.category_id = categoryId
-  tx.is_confirmed = true
   try {
-    await api.put(`api/transactions/${tx.id}`, { categoryId, isConfirmed: true })
+    await api.put(`api/transactions/${tx.id}`, { categoryId })
   } catch (e) {
-    tx.category_id = previous.category_id
-    tx.is_confirmed = previous.is_confirmed
+    tx.category_id = previous
     alert(e?.response?.data?.error || t('transactions.errors.updateCategoryFailed'))
   }
 }
